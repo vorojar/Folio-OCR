@@ -53,6 +53,11 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Ollama config
 OLLAMA_BASE = "http://localhost:11434"
 OLLAMA_MODEL = "glm-ocr"
+OCR_PROMPT = (
+    "识别图片中的正文内容，输出Markdown格式。"
+    "跳过页眉、页脚和页码。"
+    "如果有表格，输出为Markdown表格。"
+)
 
 # In-memory document state
 # doc_id -> {filename, pages: [{num, filename, ocr_text, ocr_time}], created_at}
@@ -110,7 +115,7 @@ async def ocr_image(image_path: str) -> str:
             "messages": [
                 {
                     "role": "user",
-                    "content": "Text Recognition:",
+                    "content": OCR_PROMPT,
                     "images": [image_b64],
                 }
             ],

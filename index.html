@@ -372,6 +372,80 @@
             color: rgba(45,45,45,0.25);
         }
 
+        .result-editor.hidden { display: none; }
+
+        .result-preview {
+            flex: 1;
+            width: 100%;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--charcoal);
+            overflow-y: auto;
+            white-space: pre-line;
+            word-break: break-all;
+        }
+
+        .result-preview.hidden { display: none; }
+
+        .result-preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+            white-space: normal;
+            word-break: normal;
+        }
+
+        .result-preview th,
+        .result-preview td {
+            border: 1px solid var(--warm-gray);
+            padding: 6px 10px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .result-preview th {
+            background: var(--cream-dark);
+            font-weight: 600;
+        }
+
+        .result-preview tr:hover { background: var(--cream); }
+
+        .result-preview h1, .result-preview h2, .result-preview h3 {
+            margin: 12px 0 6px 0;
+            white-space: normal;
+        }
+
+        .result-preview h1 { font-size: 1.4em; }
+        .result-preview h2 { font-size: 1.2em; }
+        .result-preview h3 { font-size: 1.1em; }
+
+        .result-preview p { margin: 0 0 4px 0; white-space: pre-line; }
+
+        /* View toggle */
+        .view-toggle {
+            display: flex;
+            background: var(--cream-dark);
+            border-radius: 0.5rem;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .view-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 0.375rem;
+            background: transparent;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(45,45,45,0.5);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .view-btn:hover { color: var(--charcoal); }
+        .view-btn.active { background: #fff; color: var(--charcoal); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
         .result-loading {
             display: flex;
             flex-direction: column;
@@ -518,6 +592,10 @@
         <div class="panel-right hidden" id="panelRight">
             <div class="result-header">
                 <span class="result-header-title">OCR Result</span>
+                <div class="view-toggle" id="viewToggle" style="display:none;">
+                    <button class="view-btn active" data-mode="edit">Edit</button>
+                    <button class="view-btn" data-mode="preview">Preview</button>
+                </div>
                 <span class="result-header-spacer"></span>
                 <span class="result-time" id="resultTime" style="display:none;"></span>
                 <button class="copy-btn" id="copyPageBtn">Copy</button>
@@ -541,6 +619,7 @@
             isLoadingModel: false,
             ocrRunning: false,
             ocrAbort: false,
+            viewMode: 'edit',
         };
 
         // --- DOM refs ---
@@ -566,6 +645,7 @@
         const panelRight       = $('panelRight');
         const resultBody       = $('resultBody');
         const resultTime       = $('resultTime');
+        const viewToggle       = $('viewToggle');
         const copyPageBtn      = $('copyPageBtn');
         const fileInput        = $('fileInput');
 
@@ -823,11 +903,12 @@
             }
         }
 
-        // --- Show editable textarea ---
+        // --- Show editable textarea + preview ---
         function showEditor(text, time) {
             resultBody.innerHTML = '';
+
             const ta = document.createElement('textarea');
-            ta.className = 'result-editor';
+            ta.className = 'result-editor' + (state.viewMode !== 'edit' ? ' hidden' : '');
             ta.value = text || '';
             ta.placeholder = 'No text recognized';
             ta.addEventListener('input', () => {
@@ -836,12 +917,135 @@
             });
             resultBody.appendChild(ta);
 
+            const preview = document.createElement('div');
+            preview.className = 'result-preview' + (state.viewMode !== 'preview' ? ' hidden' : '');
+            preview.innerHTML = renderPreview(text || '');
+            resultBody.appendChild(preview);
+
+            viewToggle.style.display = '';
+            updateViewToggleButtons();
+
             if (time !== null && time !== undefined) {
                 resultTime.textContent = time + 's';
                 resultTime.style.display = '';
             } else {
                 resultTime.style.display = 'none';
             }
+        }
+
+        // --- Render markdown/HTML to preview HTML ---
+        function renderPreview(text) {
+            if (!text) return '<span style="color:rgba(45,45,45,0.3)">No text recognized</span>';
+
+            // Split by HTML block elements (tables) to preserve them
+            // Process non-HTML parts as simple markdown
+            const parts = text.split(/(<table[\s\S]*?<\/table>)/gi);
+            let html = '';
+
+            for (const part of parts) {
+                if (part.match(/^<table[\s\S]*<\/table>$/i)) {
+                    // HTML table — pass through directly
+                    html += part;
+                } else {
+                    // Process as simple markdown
+                    html += markdownToHtml(part);
+                }
+            }
+            return html;
+        }
+
+        function markdownToHtml(text) {
+            let html = '';
+            const lines = text.split('\n');
+            let inTable = false;
+            let tableRows = [];
+
+            function flushTable() {
+                if (tableRows.length === 0) return;
+                html += '<table>';
+                for (let i = 0; i < tableRows.length; i++) {
+                    const cells = tableRows[i].split('|').filter(c => c.trim() !== '' || tableRows[i].startsWith('|'));
+                    // Clean cells: split by | and trim
+                    const cleanCells = tableRows[i].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+                    // Skip separator row (---, :--:, etc.)
+                    if (cleanCells.every(c => /^[-:]+$/.test(c))) continue;
+                    const tag = i === 0 ? 'th' : 'td';
+                    html += '<tr>' + cleanCells.map(c => `<${tag}>${escHtml(c)}</${tag}>`).join('') + '</tr>';
+                }
+                html += '</table>';
+                tableRows = [];
+                inTable = false;
+            }
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                // Detect markdown table rows (contain |)
+                if (trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.match(/\w\s*\|/))) {
+                    inTable = true;
+                    tableRows.push(trimmed);
+                    continue;
+                }
+
+                if (inTable) flushTable();
+
+                // Headers
+                if (trimmed.startsWith('### ')) {
+                    html += `<h3>${escHtml(trimmed.slice(4))}</h3>`;
+                } else if (trimmed.startsWith('## ')) {
+                    html += `<h2>${escHtml(trimmed.slice(3))}</h2>`;
+                } else if (trimmed.startsWith('# ')) {
+                    html += `<h1>${escHtml(trimmed.slice(2))}</h1>`;
+                } else if (trimmed === '') {
+                    html += '<br>';
+                } else {
+                    // Inline: bold, italic
+                    let s = escHtml(trimmed);
+                    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                    html += `<p>${s}</p>`;
+                }
+            }
+            if (inTable) flushTable();
+            return html;
+        }
+
+        function escHtml(s) {
+            return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // --- View toggle ---
+        viewToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('.view-btn');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+            if (mode === state.viewMode) return;
+
+            if (state.viewMode === 'edit') saveCurrentEditor();
+
+            state.viewMode = mode;
+            updateViewToggleButtons();
+
+            const ta = resultBody.querySelector('.result-editor');
+            const preview = resultBody.querySelector('.result-preview');
+            if (!ta || !preview) return;
+
+            if (mode === 'edit') {
+                ta.classList.remove('hidden');
+                preview.classList.add('hidden');
+            } else {
+                // Refresh preview from current textarea content
+                const page = state.pages.find(p => p.num === state.activePageNum);
+                preview.innerHTML = renderPreview(page ? page.ocr_text || '' : '');
+                ta.classList.add('hidden');
+                preview.classList.remove('hidden');
+            }
+        });
+
+        function updateViewToggleButtons() {
+            viewToggle.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === state.viewMode);
+            });
         }
 
         // --- Copy current page ---

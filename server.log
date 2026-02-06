@@ -904,3 +904,12 @@ ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有�
 2026-02-06 22:26:13,630 - INFO - [OCR] image encoded: 0.00s
 2026-02-06 22:26:15,167 - INFO - [OCR] ollama generate: 1.54s, tokens: 200
 2026-02-06 22:26:15,167 - INFO - [OCR] TOTAL: 1.54s
+2026-02-06 22:30:00,671 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:30:01,121 - INFO - [upload] 创业科学运营，李想.pdf -> 89d58257-793d-433e-9e6d-a754f6315cba, 13 page(s)
+2026-02-06 22:30:02,503 - INFO - [OCR] ollama generate: 1.83s, tokens: 190
+2026-02-06 22:30:02,503 - INFO - [OCR] TOTAL: 1.84s
+2026-02-06 22:34:06,416 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 22:34:06,495 - INFO - [cleanup] Removing orphan directory: uploads\588ca405-efbf-4795-84d5-6428cb884a7d
+2026-02-06 22:34:06,497 - INFO - [cleanup] Removing orphan directory: uploads\6acf16a1-d018-4637-b0fa-bffcb7b4df26
+2026-02-06 22:34:06,498 - INFO - [cleanup] Removing orphan directory: uploads\6cb27741-87b5-4280-b800-09a5735cf51a
+2026-02-06 22:34:06,500 - INFO - [cleanup] Removing orphan directory: uploads\89d58257-793d-433e-9e6d-a754f6315cba
