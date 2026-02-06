@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folio-OCR</title>
+    <style>
+        :root {
+            --cream: #F9F7F5;
+            --cream-dark: #F0EDE8;
+            --warm-gray: #E8E4DE;
+            --charcoal: #2D2D2D;
+            --accent: #D4A373;
+            --accent-dark: #B8956A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* === Top Bar === */
+        .topbar {
+            background: var(--charcoal);
+            color: var(--cream);
+            padding: 0 20px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .topbar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+            color: var(--accent);
+        }
+
+        .topbar-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .topbar-filename {
+            font-size: 14px;
+            opacity: 0.7;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+        .topbar-spacer {
+            flex: 1;
+        }
+
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            opacity: 0.6;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+            flex-shrink: 0;
+        }
+
+        .status-dot.online { background: #6DBF7B; }
+        .status-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+        .status-dot.error { background: #DC2626; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .topbar-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 0.75rem;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .topbar-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+        .topbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .topbar-btn.primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .topbar-btn.primary:hover { background: var(--accent-dark); }
+
+        .topbar-btn.danger {
+            background: #DC2626;
+            color: #fff;
+            border: none;
+        }
+
+        .topbar-btn.danger:hover { background: #B91C1C; }
+
+        /* === Main Layout === */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* === Left Panel (Page List) === */
+        .panel-left {
+            width: 200px;
+            background: #fff;
+            border-right: 1px solid var(--warm-gray);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .panel-left.hidden { display: none; }
+
+        .panel-header {
+            padding: 12px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(45,45,45,0.45);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--cream-dark);
+            flex-shrink: 0;
+        }
+
+        .page-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .page-thumb {
+            padding: 6px;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-thumb:hover { background: var(--cream); }
+        .page-thumb.active { background: var(--cream-dark); outline: 2px solid var(--accent); }
+
+        .page-thumb img {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            background: var(--cream);
+            flex-shrink: 0;
+        }
+
+        .page-thumb-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .page-thumb-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--charcoal);
+        }
+
+        .page-thumb-status {
+            font-size: 11px;
+            color: rgba(45,45,45,0.4);
+            margin-top: 2px;
+        }
+
+        .page-thumb-status.done { color: #6DBF7B; }
+        .page-thumb-status.running { color: var(--accent); }
+        .page-thumb-status.error { color: #DC2626; }
+
+        /* === Center Panel (Preview / Upload) === */
+        .panel-center {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--cream);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .upload-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--warm-gray);
+            border-radius: 1rem;
+            padding: 60px 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fff;
+            max-width: 420px;
+            width: 80%;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: var(--cream);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--cream-dark);
+        }
+
+        .upload-zone svg {
+            width: 56px;
+            height: 56px;
+            stroke: var(--accent);
+            opacity: 0.6;
+            margin-bottom: 16px;
+        }
+
+        .upload-zone p {
+            color: var(--charcoal);
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+
+        .upload-zone small {
+            color: rgba(45,45,45,0.4);
+            font-size: 12px;
+        }
+
+        .upload-zone.hidden { display: none; }
+
+        .preview-container {
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            padding: 16px;
+        }
+
+        .preview-container.show { display: flex; }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        /* === Right Panel (OCR Result) === */
+        .panel-right {
+            width: 380px;
+            background: #fff;
+            border-left: 1px solid var(--warm-gray);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .panel-right.hidden { display: none; }
+
+        .result-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--cream-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .result-header-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(45,45,45,0.45);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-header-spacer { flex: 1; }
+
+        .result-time {
+            font-size: 11px;
+            color: var(--accent-dark);
+            background: var(--cream-dark);
+            padding: 2px 8px;
+            border-radius: 0.5rem;
+        }
+
+        .copy-btn {
+            padding: 0.35rem 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: var(--warm-gray);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--charcoal);
+            transition: all 0.15s;
+        }
+
+        .copy-btn:hover { background: var(--cream-dark); }
+
+        .result-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-placeholder {
+            color: rgba(45,45,45,0.3);
+            text-align: center;
+            padding-top: 60px;
+            font-size: 14px;
+        }
+
+        .result-editor {
+            flex: 1;
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 16px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--charcoal);
+            background: #fff;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-editor::placeholder {
+            color: rgba(45,45,45,0.25);
+        }
+
+        .result-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 60px;
+            color: rgba(45,45,45,0.5);
+            font-size: 13px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--warm-gray);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-error {
+            color: #DC2626;
+            background: #FEE2E2;
+            padding: 12px;
+            margin: 16px;
+            border-radius: 0.75rem;
+            font-size: 13px;
+        }
+
+        /* === Progress bar === */
+        .ocr-progress {
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .ocr-progress-bar {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s ease;
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* === Export dropdown === */
+        .export-wrap {
+            position: relative;
+            display: inline-block;
+        }
+
+        .export-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #fff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            padding: 4px;
+            z-index: 100;
+            min-width: 170px;
+        }
+
+        .export-menu.show { display: block; }
+
+        .export-item {
+            padding: 8px 14px;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 13px;
+            color: var(--charcoal);
+            white-space: nowrap;
+            transition: background 0.1s;
+        }
+
+        .export-item:hover { background: var(--cream); }
+
+        /* === Hidden file input === */
+        #fileInput { display: none; }
+
+        /* === Scrollbar === */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--warm-gray); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ccc; }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="topbar">
+        <span class="topbar-brand">Folio-OCR</span>
+        <span class="topbar-divider"></span>
+        <span class="topbar-filename" id="topFilename">No document</span>
+        <span class="topbar-spacer"></span>
+        <span class="topbar-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Checking...</span>
+        </span>
+        <button class="topbar-btn" id="loadModelBtn" style="display:none;">Load Model</button>
+        <button class="topbar-btn" id="newFileBtn" title="Upload new file">Upload</button>
+        <button class="topbar-btn primary" id="ocrAllBtn" style="display:none;">OCR All Pages</button>
+        <span class="export-wrap" id="exportWrap" style="display:none;">
+            <button class="topbar-btn" id="exportBtn">Export</button>
+            <div class="export-menu" id="exportMenu">
+                <div class="export-item" data-fmt="md">.md &nbsp; Markdown</div>
+                <div class="export-item" data-fmt="txt">.txt &nbsp; Plain Text</div>
+                <div class="export-item" data-fmt="docx">.docx &nbsp; Word</div>
+            </div>
+        </span>
+        <button class="topbar-btn" id="copyAllBtn" style="display:none;">Copy All</button>
+    </div>
+    <!-- Progress bar (below topbar) -->
+    <div class="ocr-progress" id="ocrProgress" style="display:none;">
+        <div class="ocr-progress-bar" id="ocrProgressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Main 3-Column Layout -->
+    <div class="main">
+        <!-- Left: Page List -->
+        <div class="panel-left hidden" id="panelLeft">
+            <div class="panel-header">Pages</div>
+            <div class="page-list" id="pageList"></div>
+        </div>
+
+        <!-- Center: Preview / Upload -->
+        <div class="panel-center" id="panelCenter">
+            <div class="upload-zone" id="uploadZone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>Click or drag files here</p>
+                <small>Supports: PNG, JPG, GIF, BMP, PDF</small>
+            </div>
+            <div class="preview-container" id="previewContainer">
+                <img id="previewImage" src="" alt="Preview">
+            </div>
+        </div>
+
+        <!-- Right: OCR Result -->
+        <div class="panel-right hidden" id="panelRight">
+            <div class="result-header">
+                <span class="result-header-title">OCR Result</span>
+                <span class="result-header-spacer"></span>
+                <span class="result-time" id="resultTime" style="display:none;"></span>
+                <button class="copy-btn" id="copyPageBtn">Copy</button>
+            </div>
+            <div class="result-body" id="resultBody">
+                <div class="result-placeholder">Select a page to view OCR result</div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf" multiple>
+
+    <script>
+        // --- State ---
+        const state = {
+            activeDocId: null,
+            activeDocFilename: null,
+            pages: [],
+            activePageNum: null,
+            modelLoaded: false,
+            isLoadingModel: false,
+            ocrRunning: false,
+            ocrAbort: false,
+        };
+
+        // --- DOM refs ---
+        const $ = id => document.getElementById(id);
+        const topFilename      = $('topFilename');
+        const statusDot        = $('statusDot');
+        const statusText       = $('statusText');
+        const loadModelBtn     = $('loadModelBtn');
+        const newFileBtn       = $('newFileBtn');
+        const ocrAllBtn        = $('ocrAllBtn');
+        const exportWrap       = $('exportWrap');
+        const exportBtn        = $('exportBtn');
+        const exportMenu       = $('exportMenu');
+        const copyAllBtn       = $('copyAllBtn');
+        const ocrProgress      = $('ocrProgress');
+        const ocrProgressBar   = $('ocrProgressBar');
+        const panelLeft        = $('panelLeft');
+        const pageList         = $('pageList');
+        const panelCenter      = $('panelCenter');
+        const uploadZone       = $('uploadZone');
+        const previewContainer = $('previewContainer');
+        const previewImage     = $('previewImage');
+        const panelRight       = $('panelRight');
+        const resultBody       = $('resultBody');
+        const resultTime       = $('resultTime');
+        const copyPageBtn      = $('copyPageBtn');
+        const fileInput        = $('fileInput');
+
+        // --- Status polling ---
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                statusDot.className = 'status-dot online';
+                state.modelLoaded = data.model_loaded;
+
+                if (data.model_loaded) {
+                    statusText.textContent = 'Model ready';
+                    loadModelBtn.style.display = 'none';
+                } else if (state.isLoadingModel) {
+                    statusDot.className = 'status-dot loading';
+                    statusText.textContent = 'Loading model...';
+                } else {
+                    statusText.textContent = 'Model not loaded';
+                    loadModelBtn.style.display = '';
+                }
+            } catch (e) {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = 'Offline';
+            }
+        }
+        checkStatus();
+        setInterval(checkStatus, 3000);
+
+        // --- Load model ---
+        loadModelBtn.addEventListener('click', async () => {
+            state.isLoadingModel = true;
+            loadModelBtn.disabled = true;
+            loadModelBtn.textContent = 'Loading...';
+            statusDot.className = 'status-dot loading';
+            statusText.textContent = 'Loading model...';
+            try {
+                await fetch('/api/load-model', { method: 'POST' });
+            } catch (e) {
+                console.error('Load model failed:', e);
+            } finally {
+                state.isLoadingModel = false;
+                loadModelBtn.disabled = false;
+                loadModelBtn.textContent = 'Load Model';
+                checkStatus();
+            }
+        });
+
+        // --- File upload ---
+        uploadZone.addEventListener('click', () => fileInput.click());
+        newFileBtn.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) uploadFiles(fileInput.files);
+            fileInput.value = '';
+        });
+
+        panelCenter.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (!uploadZone.classList.contains('hidden')) {
+                uploadZone.classList.add('dragover');
+            }
+        });
+        panelCenter.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
+        });
+
+        async function uploadFiles(fileList) {
+            if (state.activeDocId) {
+                try { await fetch(`/api/documents/${state.activeDocId}`, { method: 'DELETE' }); } catch(e) {}
+            }
+
+            const label = fileList.length === 1 ? fileList[0].name : `${fileList.length} files`;
+            topFilename.textContent = `Uploading ${label}...`;
+            state.activeDocId = null;
+            state.activeDocFilename = null;
+            state.pages = [];
+            state.activePageNum = null;
+            pageList.innerHTML = '';
+
+            const formData = new FormData();
+            for (const f of fileList) formData.append('files', f);
+
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Upload failed');
+                }
+                await handleUploadStream(res);
+            } catch (e) {
+                topFilename.textContent = 'Upload failed: ' + e.message;
+                console.error(e);
+            }
+        }
+
+        function initDoc(docId, filename) {
+            state.activeDocId = docId;
+            state.activeDocFilename = filename;
+            state.pages = [];
+            state.activePageNum = null;
+            topFilename.textContent = filename;
+            pageList.innerHTML = '';
+            panelLeft.classList.remove('hidden');
+            panelRight.classList.remove('hidden');
+            uploadZone.classList.add('hidden');
+            ocrAllBtn.style.display = '';
+            exportWrap.style.display = '';
+            copyAllBtn.style.display = '';
+        }
+
+        function addPage(page) {
+            state.pages.push(page);
+            appendPageThumb(page);
+        }
+
+        async function handleUploadStream(res) {
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const parts = buffer.split('\n\n');
+                buffer = parts.pop();
+
+                for (const part of parts) {
+                    const line = part.split('\n').find(l => l.startsWith('data: '));
+                    if (!line) continue;
+                    const evt = JSON.parse(line.slice(6));
+
+                    if (evt.type === 'init') {
+                        initDoc(evt.doc_id, evt.filename);
+                    } else if (evt.type === 'page') {
+                        addPage(evt.page);
+                        if (state.pages.length === 1) selectPage(1);
+                    }
+                }
+            }
+        }
+
+        // --- Append a single thumbnail ---
+        function appendPageThumb(page) {
+            const div = document.createElement('div');
+            div.className = 'page-thumb' + (page.num === state.activePageNum ? ' active' : '');
+            div.dataset.num = page.num;
+
+            let sc = '', sl = 'Pending';
+            if (page.ocr_text != null) { sc = 'done'; sl = `Done (${page.ocr_time}s)`; }
+
+            div.innerHTML = `
+                <img src="${page.image_url}" alt="Page ${page.num}" loading="lazy">
+                <div class="page-thumb-info">
+                    <div class="page-thumb-label">Page ${page.num}</div>
+                    <div class="page-thumb-status ${sc}">${sl}</div>
+                </div>
+            `;
+            div.addEventListener('click', () => selectPage(page.num));
+            pageList.appendChild(div);
+        }
+
+        function renderPageList() {
+            pageList.innerHTML = '';
+            state.pages.forEach(page => appendPageThumb(page));
+        }
+
+        // --- Select page ---
+        async function selectPage(num) {
+            // Save current editor content before switching
+            saveCurrentEditor();
+
+            state.activePageNum = num;
+
+            pageList.querySelectorAll('.page-thumb').forEach(el => {
+                el.classList.toggle('active', parseInt(el.dataset.num) === num);
+            });
+
+            const page = state.pages.find(p => p.num === num);
+            if (!page) return;
+
+            previewContainer.classList.add('show');
+            previewImage.src = page.image_url;
+
+            if (page.ocr_text !== null && page.ocr_text !== undefined) {
+                showEditor(page.ocr_text, page.ocr_time);
+            } else {
+                await runOcrForPage(page);
+            }
+        }
+
+        // --- Save textarea edits back to state ---
+        function saveCurrentEditor() {
+            const ta = resultBody.querySelector('.result-editor');
+            if (ta && state.activePageNum != null) {
+                const page = state.pages.find(p => p.num === state.activePageNum);
+                if (page) page.ocr_text = ta.value;
+            }
+        }
+
+        // --- Run OCR for a single page ---
+        async function runOcrForPage(page) {
+            resultBody.innerHTML = '<div class="result-loading"><div class="spinner"></div>Recognizing page ' + page.num + '...</div>';
+            resultTime.style.display = 'none';
+
+            const thumbStatus = pageList.querySelector(`.page-thumb[data-num="${page.num}"] .page-thumb-status`);
+            if (thumbStatus) {
+                thumbStatus.className = 'page-thumb-status running';
+                thumbStatus.textContent = 'Running...';
+            }
+
+            try {
+                const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}`, { method: 'POST' });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'OCR failed');
+                }
+                const data = await res.json();
+
+                page.ocr_text = data.text;
+                page.ocr_time = data.time;
+
+                if (thumbStatus) {
+                    thumbStatus.className = 'page-thumb-status done';
+                    thumbStatus.textContent = `Done (${data.time}s)`;
+                }
+
+                if (state.activePageNum === page.num) {
+                    showEditor(data.text, data.time);
+                }
+            } catch (e) {
+                if (thumbStatus) {
+                    thumbStatus.className = 'page-thumb-status error';
+                    thumbStatus.textContent = 'Error';
+                }
+                if (state.activePageNum === page.num) {
+                    resultBody.innerHTML = `<div class="result-error">OCR failed: ${e.message}</div>`;
+                }
+            }
+        }
+
+        // --- Show editable textarea ---
+        function showEditor(text, time) {
+            resultBody.innerHTML = '';
+            const ta = document.createElement('textarea');
+            ta.className = 'result-editor';
+            ta.value = text || '';
+            ta.placeholder = 'No text recognized';
+            ta.addEventListener('input', () => {
+                const page = state.pages.find(p => p.num === state.activePageNum);
+                if (page) page.ocr_text = ta.value;
+            });
+            resultBody.appendChild(ta);
+
+            if (time !== null && time !== undefined) {
+                resultTime.textContent = time + 's';
+                resultTime.style.display = '';
+            } else {
+                resultTime.style.display = 'none';
+            }
+        }
+
+        // --- Copy current page ---
+        copyPageBtn.addEventListener('click', () => {
+            saveCurrentEditor();
+            const page = state.pages.find(p => p.num === state.activePageNum);
+            if (page && page.ocr_text) {
+                navigator.clipboard.writeText(page.ocr_text);
+                copyPageBtn.textContent = 'Copied!';
+                setTimeout(() => copyPageBtn.textContent = 'Copy', 1500);
+            }
+        });
+
+        // --- Copy all pages ---
+        copyAllBtn.addEventListener('click', () => {
+            saveCurrentEditor();
+            const md = buildMarkdown();
+            if (md) {
+                navigator.clipboard.writeText(md);
+                copyAllBtn.textContent = 'Copied!';
+                setTimeout(() => copyAllBtn.textContent = 'Copy All', 1500);
+            }
+        });
+
+        // --- Build Markdown content ---
+        function buildMarkdown() {
+            const pagesWithText = state.pages.filter(p => p.ocr_text);
+            if (pagesWithText.length === 0) return '';
+
+            const title = state.activeDocFilename || 'Document';
+
+            if (pagesWithText.length === 1 && state.pages.length === 1) {
+                return pagesWithText[0].ocr_text;
+            }
+
+            let md = `# ${title}\n\n`;
+            for (const p of state.pages) {
+                md += `## Page ${p.num}\n\n`;
+                md += (p.ocr_text || '*(not recognized)*') + '\n\n';
+            }
+            return md.trim();
+        }
+
+        // --- Export dropdown ---
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            exportMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => exportMenu.classList.remove('show'));
+
+        exportMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.export-item');
+            if (!item) return;
+            e.stopPropagation();
+            exportMenu.classList.remove('show');
+
+            saveCurrentEditor();
+            const fmt = item.dataset.fmt;
+            const baseName = (state.activeDocFilename || 'document').replace(/\.[^.]+$/, '');
+
+            let blob, ext;
+
+            if (fmt === 'md') {
+                const md = buildMarkdown();
+                if (!md) return;
+                blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                ext = '.md';
+            } else if (fmt === 'txt') {
+                const txt = buildPlainText();
+                if (!txt) return;
+                blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                ext = '.txt';
+            } else if (fmt === 'docx') {
+                blob = buildDocxBlob();
+                if (!blob) return;
+                ext = '.docx';
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = baseName + ext;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // --- Build plain text ---
+        function buildPlainText() {
+            const pagesWithText = state.pages.filter(p => p.ocr_text);
+            if (pagesWithText.length === 0) return '';
+
+            if (state.pages.length === 1) return state.pages[0].ocr_text || '';
+
+            return state.pages.map(p => {
+                const text = p.ocr_text || '(not recognized)';
+                return `--- Page ${p.num} ---\n\n${text}`;
+            }).join('\n\n\n');
+        }
+
+        // --- Build DOCX (Word-compatible HTML) ---
+        function buildDocxBlob() {
+            const pagesWithText = state.pages.filter(p => p.ocr_text);
+            if (pagesWithText.length === 0) return null;
+
+            const title = state.activeDocFilename || 'Document';
+
+            function esc(s) {
+                return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function textToHtml(text) {
+                return text.split('\n').map(line => `<p>${esc(line) || '&nbsp;'}</p>`).join('');
+            }
+
+            let body = '';
+            if (state.pages.length === 1) {
+                body = textToHtml(state.pages[0].ocr_text || '');
+            } else {
+                body = `<h1>${esc(title)}</h1>`;
+                for (const p of state.pages) {
+                    body += `<h2>Page ${p.num}</h2>`;
+                    body += textToHtml(p.ocr_text || '(not recognized)');
+                }
+            }
+
+            const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.6}h1{font-size:18pt;margin-bottom:12pt}h2{font-size:14pt;margin-top:18pt;margin-bottom:8pt;color:#555}p{margin:0 0 4pt 0}</style></head><body>${body}</body></html>`;
+
+            return new Blob(['\ufeff' + html], { type: 'application/msword' });
+        }
+
+        // --- Format time remaining ---
+        function formatEta(seconds) {
+            if (seconds < 60) return Math.round(seconds) + 's';
+            const m = Math.floor(seconds / 60);
+            const s = Math.round(seconds % 60);
+            return m + 'm' + (s > 0 ? s.toString().padStart(2, '0') + 's' : '');
+        }
+
+        // --- OCR all pages with progress ---
+        ocrAllBtn.addEventListener('click', async () => {
+            if (!state.activeDocId) return;
+
+            if (state.ocrRunning) {
+                state.ocrAbort = true;
+                return;
+            }
+
+            state.ocrRunning = true;
+            state.ocrAbort = false;
+            ocrAllBtn.textContent = 'Stop';
+            ocrAllBtn.classList.add('danger');
+
+            const pending = state.pages.filter(p => p.ocr_text == null);
+            const total = pending.length;
+            let done = 0;
+            let totalTime = 0;
+
+            // Show progress bar
+            ocrProgress.style.display = '';
+            ocrProgressBar.style.width = '0%';
+
+            for (const page of state.pages) {
+                if (state.ocrAbort) break;
+                if (page.ocr_text !== null && page.ocr_text !== undefined) continue;
+
+                // Update button text with progress
+                const eta = done > 0 ? formatEta((totalTime / done) * (total - done)) : '';
+                ocrAllBtn.textContent = `Stop ${done}/${total}` + (eta ? ` ~${eta}` : '');
+
+                const thumbStatus = pageList.querySelector(`.page-thumb[data-num="${page.num}"] .page-thumb-status`);
+                if (thumbStatus) {
+                    thumbStatus.className = 'page-thumb-status running';
+                    thumbStatus.textContent = 'Running...';
+                }
+
+                if (state.activePageNum === page.num) {
+                    resultBody.innerHTML = '<div class="result-loading"><div class="spinner"></div>Recognizing page ' + page.num + '...</div>';
+                    resultTime.style.display = 'none';
+                }
+
+                try {
+                    const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}`, { method: 'POST' });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.detail || 'OCR failed');
+                    }
+                    const data = await res.json();
+                    page.ocr_text = data.text;
+                    page.ocr_time = data.time;
+
+                    done++;
+                    totalTime += data.time || 0;
+
+                    // Update progress bar
+                    ocrProgressBar.style.width = Math.round((done / total) * 100) + '%';
+
+                    if (thumbStatus) {
+                        thumbStatus.className = 'page-thumb-status done';
+                        thumbStatus.textContent = `Done (${data.time}s)`;
+                    }
+
+                    if (state.activePageNum === page.num) {
+                        showEditor(data.text, data.time);
+                    }
+                } catch (e) {
+                    done++;
+                    ocrProgressBar.style.width = Math.round((done / total) * 100) + '%';
+
+                    if (thumbStatus) {
+                        thumbStatus.className = 'page-thumb-status error';
+                        thumbStatus.textContent = 'Error';
+                    }
+                    if (state.activePageNum === page.num) {
+                        resultBody.innerHTML = `<div class="result-error">OCR failed: ${e.message}</div>`;
+                    }
+                }
+            }
+
+            state.ocrRunning = false;
+            state.ocrAbort = false;
+            ocrAllBtn.textContent = 'OCR All Pages';
+            ocrAllBtn.classList.remove('danger');
+
+            // Hide progress bar after a short delay
+            setTimeout(() => {
+                ocrProgress.style.display = 'none';
+                ocrProgressBar.style.width = '0%';
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

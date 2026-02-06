@@ -1,0 +1,906 @@
+2026-02-06 21:19:25,196 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 21:22:19,143 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 21:22:26,347 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:22:29,001 - INFO - [OCR] ollama generate: 2.65s, tokens: 62
+2026-02-06 21:22:29,001 - INFO - [OCR] TOTAL: 2.68s
+2026-02-06 21:22:29,010 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:29,479 - INFO - [OCR] ollama generate: 0.47s, tokens: 58
+2026-02-06 21:22:29,480 - INFO - [OCR] TOTAL: 0.47s
+2026-02-06 21:22:29,487 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:29,954 - INFO - [OCR] ollama generate: 0.46s, tokens: 58
+2026-02-06 21:22:29,954 - INFO - [OCR] TOTAL: 0.47s
+2026-02-06 21:22:29,962 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:30,323 - INFO - [OCR] ollama generate: 0.36s, tokens: 31
+2026-02-06 21:22:30,323 - INFO - [OCR] TOTAL: 0.36s
+2026-02-06 21:22:30,330 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:30,789 - INFO - [OCR] ollama generate: 0.46s, tokens: 52
+2026-02-06 21:22:30,789 - INFO - [OCR] TOTAL: 0.46s
+2026-02-06 21:22:30,798 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:31,270 - INFO - [OCR] ollama generate: 0.47s, tokens: 58
+2026-02-06 21:22:31,271 - INFO - [OCR] TOTAL: 0.47s
+2026-02-06 21:22:31,283 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:31,646 - INFO - [OCR] ollama generate: 0.36s, tokens: 30
+2026-02-06 21:22:31,648 - INFO - [OCR] TOTAL: 0.37s
+2026-02-06 21:22:31,660 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:22:32,103 - INFO - [OCR] ollama generate: 0.44s, tokens: 61
+2026-02-06 21:22:32,103 - INFO - [OCR] TOTAL: 0.45s
+2026-02-06 21:22:32,129 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:22:32,645 - INFO - [OCR] ollama generate: 0.51s, tokens: 72
+2026-02-06 21:22:32,645 - INFO - [OCR] TOTAL: 0.54s
+2026-02-06 21:22:52,991 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:22:54,292 - INFO - [OCR] ollama generate: 1.30s, tokens: 11
+2026-02-06 21:22:54,294 - INFO - [OCR] TOTAL: 1.31s
+2026-02-06 21:23:04,422 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:23:05,467 - INFO - [OCR] ollama generate: 1.04s, tokens: 13
+2026-02-06 21:23:05,467 - INFO - [OCR] TOTAL: 1.05s
+2026-02-06 21:23:19,178 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:23:21,050 - INFO - [OCR] ollama generate: 1.87s, tokens: 58
+2026-02-06 21:23:21,052 - INFO - [OCR] TOTAL: 1.88s
+2026-02-06 21:23:29,025 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:23:30,039 - INFO - [OCR] ollama generate: 1.01s, tokens: 58
+2026-02-06 21:23:30,041 - INFO - [OCR] TOTAL: 1.04s
+2026-02-06 21:23:30,066 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:23:30,559 - INFO - [OCR] ollama generate: 0.49s, tokens: 3
+2026-02-06 21:23:30,560 - INFO - [OCR] TOTAL: 0.51s
+2026-02-06 21:24:18,835 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:24:21,254 - INFO - [OCR] ollama generate: 2.42s, tokens: 420
+2026-02-06 21:24:21,254 - INFO - [OCR] TOTAL: 2.45s
+2026-02-06 21:24:21,262 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:24:24,130 - INFO - [OCR] ollama generate: 2.86s, tokens: 547
+2026-02-06 21:24:24,131 - INFO - [OCR] TOTAL: 2.88s
+2026-02-06 21:24:24,168 - INFO - [OCR] image encoded: 0.04s
+2026-02-06 21:24:26,886 - INFO - [OCR] ollama generate: 2.72s, tokens: 534
+2026-02-06 21:24:26,886 - INFO - [OCR] TOTAL: 2.76s
+2026-02-06 21:24:26,894 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:24:29,214 - INFO - [OCR] ollama generate: 2.32s, tokens: 429
+2026-02-06 21:24:29,215 - INFO - [OCR] TOTAL: 2.33s
+2026-02-06 21:24:29,241 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:24:32,210 - INFO - [OCR] ollama generate: 2.97s, tokens: 595
+2026-02-06 21:24:32,211 - INFO - [OCR] TOTAL: 3.00s
+2026-02-06 21:24:32,220 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:24:36,063 - INFO - [OCR] ollama generate: 3.84s, tokens: 826
+2026-02-06 21:24:36,064 - INFO - [OCR] TOTAL: 3.85s
+2026-02-06 21:24:36,088 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:24:39,591 - INFO - [OCR] ollama generate: 3.50s, tokens: 750
+2026-02-06 21:24:39,598 - INFO - [OCR] TOTAL: 3.53s
+2026-02-06 21:24:39,619 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:24:42,638 - INFO - [OCR] ollama generate: 3.02s, tokens: 611
+2026-02-06 21:24:42,639 - INFO - [OCR] TOTAL: 3.04s
+2026-02-06 21:24:42,665 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:24:45,986 - INFO - [OCR] ollama generate: 3.31s, tokens: 693
+2026-02-06 21:24:45,986 - INFO - [OCR] TOTAL: 3.35s
+2026-02-06 21:24:45,996 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:24:49,072 - INFO - [OCR] ollama generate: 3.08s, tokens: 616
+2026-02-06 21:24:49,072 - INFO - [OCR] TOTAL: 3.09s
+2026-02-06 21:24:49,097 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:24:52,263 - INFO - [OCR] ollama generate: 3.15s, tokens: 635
+2026-02-06 21:24:52,263 - INFO - [OCR] TOTAL: 3.19s
+2026-02-06 21:24:52,291 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:24:55,641 - INFO - [OCR] ollama generate: 3.35s, tokens: 680
+2026-02-06 21:24:55,645 - INFO - [OCR] TOTAL: 3.38s
+2026-02-06 21:24:55,672 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:24:59,197 - INFO - [OCR] ollama generate: 3.52s, tokens: 721
+2026-02-06 21:24:59,198 - INFO - [OCR] TOTAL: 3.55s
+2026-02-06 21:24:59,225 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:02,807 - INFO - [OCR] ollama generate: 3.58s, tokens: 734
+2026-02-06 21:25:02,809 - INFO - [OCR] TOTAL: 3.61s
+2026-02-06 21:25:02,840 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:06,271 - INFO - [OCR] ollama generate: 3.43s, tokens: 659
+2026-02-06 21:25:06,273 - INFO - [OCR] TOTAL: 3.46s
+2026-02-06 21:25:06,300 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:09,741 - INFO - [OCR] ollama generate: 3.44s, tokens: 680
+2026-02-06 21:25:09,744 - INFO - [OCR] TOTAL: 3.47s
+2026-02-06 21:25:09,777 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:15,874 - INFO - [OCR] ollama generate: 6.10s, tokens: 741
+2026-02-06 21:25:15,876 - INFO - [OCR] TOTAL: 6.13s
+2026-02-06 21:25:15,908 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:22,279 - INFO - [OCR] ollama generate: 6.37s, tokens: 743
+2026-02-06 21:25:22,280 - INFO - [OCR] TOTAL: 6.40s
+2026-02-06 21:25:22,287 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:25:27,503 - INFO - [OCR] ollama generate: 5.22s, tokens: 572
+2026-02-06 21:25:27,505 - INFO - [OCR] TOTAL: 5.23s
+2026-02-06 21:25:27,529 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:25:33,126 - INFO - [OCR] ollama generate: 5.59s, tokens: 633
+2026-02-06 21:25:33,127 - INFO - [OCR] TOTAL: 5.62s
+2026-02-06 21:25:33,164 - INFO - [OCR] image encoded: 0.04s
+2026-02-06 21:25:39,277 - INFO - [OCR] ollama generate: 6.11s, tokens: 728
+2026-02-06 21:25:39,279 - INFO - [OCR] TOTAL: 6.15s
+2026-02-06 21:25:39,305 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:43,315 - INFO - [OCR] ollama generate: 4.01s, tokens: 390
+2026-02-06 21:25:43,317 - INFO - [OCR] TOTAL: 4.04s
+2026-02-06 21:25:43,349 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:25:48,119 - INFO - [OCR] ollama generate: 4.77s, tokens: 520
+2026-02-06 21:25:48,119 - INFO - [OCR] TOTAL: 4.80s
+2026-02-06 21:25:48,130 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:25:53,330 - INFO - [OCR] ollama generate: 5.20s, tokens: 588
+2026-02-06 21:25:53,330 - INFO - [OCR] TOTAL: 5.21s
+2026-02-06 21:25:53,350 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:25:58,661 - INFO - [OCR] ollama generate: 5.30s, tokens: 612
+2026-02-06 21:25:58,661 - INFO - [OCR] TOTAL: 5.33s
+2026-02-06 21:25:58,669 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:26:03,803 - INFO - [OCR] ollama generate: 5.13s, tokens: 595
+2026-02-06 21:26:03,803 - INFO - [OCR] TOTAL: 5.14s
+2026-02-06 21:26:03,813 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:26:08,572 - INFO - [OCR] ollama generate: 4.76s, tokens: 524
+2026-02-06 21:26:08,574 - INFO - [OCR] TOTAL: 4.77s
+2026-02-06 21:26:08,594 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:12,813 - INFO - [OCR] ollama generate: 4.22s, tokens: 446
+2026-02-06 21:26:12,813 - INFO - [OCR] TOTAL: 4.24s
+2026-02-06 21:26:12,844 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:26:17,413 - INFO - [OCR] ollama generate: 4.57s, tokens: 498
+2026-02-06 21:26:17,414 - INFO - [OCR] TOTAL: 4.60s
+2026-02-06 21:26:17,438 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:22,177 - INFO - [OCR] ollama generate: 4.74s, tokens: 525
+2026-02-06 21:26:22,178 - INFO - [OCR] TOTAL: 4.76s
+2026-02-06 21:26:22,187 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:26:26,972 - INFO - [OCR] ollama generate: 4.78s, tokens: 544
+2026-02-06 21:26:26,972 - INFO - [OCR] TOTAL: 4.79s
+2026-02-06 21:26:26,995 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:30,806 - INFO - [OCR] ollama generate: 3.81s, tokens: 380
+2026-02-06 21:26:30,808 - INFO - [OCR] TOTAL: 3.84s
+2026-02-06 21:26:30,832 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:35,645 - INFO - [OCR] ollama generate: 4.81s, tokens: 543
+2026-02-06 21:26:35,646 - INFO - [OCR] TOTAL: 4.84s
+2026-02-06 21:26:35,670 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:40,332 - INFO - [OCR] ollama generate: 4.66s, tokens: 526
+2026-02-06 21:26:40,334 - INFO - [OCR] TOTAL: 4.69s
+2026-02-06 21:26:40,352 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:44,494 - INFO - [OCR] ollama generate: 4.14s, tokens: 445
+2026-02-06 21:26:44,494 - INFO - [OCR] TOTAL: 4.16s
+2026-02-06 21:26:44,508 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:26:48,692 - INFO - [OCR] ollama generate: 4.18s, tokens: 444
+2026-02-06 21:26:48,694 - INFO - [OCR] TOTAL: 4.20s
+2026-02-06 21:26:48,718 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:50,670 - INFO - [OCR] ollama generate: 1.95s, tokens: 82
+2026-02-06 21:26:50,671 - INFO - [OCR] TOTAL: 1.98s
+2026-02-06 21:26:50,692 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:26:53,994 - INFO - [OCR] ollama generate: 3.30s, tokens: 303
+2026-02-06 21:26:53,994 - INFO - [OCR] TOTAL: 3.32s
+2026-02-06 21:26:54,024 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:26:58,092 - INFO - [OCR] ollama generate: 4.07s, tokens: 432
+2026-02-06 21:26:58,092 - INFO - [OCR] TOTAL: 4.10s
+2026-02-06 21:26:58,100 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:27:02,447 - INFO - [OCR] ollama generate: 4.35s, tokens: 473
+2026-02-06 21:27:02,447 - INFO - [OCR] TOTAL: 4.36s
+2026-02-06 21:27:02,456 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:27:06,052 - INFO - [OCR] ollama generate: 3.60s, tokens: 355
+2026-02-06 21:27:06,052 - INFO - [OCR] TOTAL: 3.60s
+2026-02-06 21:27:06,070 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:10,108 - INFO - [OCR] ollama generate: 4.04s, tokens: 436
+2026-02-06 21:27:10,108 - INFO - [OCR] TOTAL: 4.06s
+2026-02-06 21:27:10,128 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:14,013 - INFO - [OCR] ollama generate: 3.88s, tokens: 405
+2026-02-06 21:27:14,014 - INFO - [OCR] TOTAL: 3.91s
+2026-02-06 21:27:14,038 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:17,763 - INFO - [OCR] ollama generate: 3.72s, tokens: 377
+2026-02-06 21:27:17,763 - INFO - [OCR] TOTAL: 3.75s
+2026-02-06 21:27:17,782 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:21,423 - INFO - [OCR] ollama generate: 3.63s, tokens: 370
+2026-02-06 21:27:21,424 - INFO - [OCR] TOTAL: 3.66s
+2026-02-06 21:27:21,443 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:25,041 - INFO - [OCR] ollama generate: 3.59s, tokens: 353
+2026-02-06 21:27:25,041 - INFO - [OCR] TOTAL: 3.62s
+2026-02-06 21:27:25,056 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:28,927 - INFO - [OCR] ollama generate: 3.87s, tokens: 404
+2026-02-06 21:27:28,930 - INFO - [OCR] TOTAL: 3.89s
+2026-02-06 21:27:28,965 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:27:32,694 - INFO - [OCR] ollama generate: 3.72s, tokens: 379
+2026-02-06 21:27:32,694 - INFO - [OCR] TOTAL: 3.76s
+2026-02-06 21:27:32,722 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:27:36,410 - INFO - [OCR] ollama generate: 3.69s, tokens: 374
+2026-02-06 21:27:36,410 - INFO - [OCR] TOTAL: 3.71s
+2026-02-06 21:27:36,416 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:27:40,286 - INFO - [OCR] ollama generate: 3.87s, tokens: 401
+2026-02-06 21:27:40,289 - INFO - [OCR] TOTAL: 3.88s
+2026-02-06 21:27:40,310 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:27:44,969 - INFO - [OCR] ollama generate: 4.66s, tokens: 538
+2026-02-06 21:27:44,970 - INFO - [OCR] TOTAL: 4.68s
+2026-02-06 21:45:33,133 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 21:45:42,081 - INFO - [upload] markdown-20260101050843.png -> 1ed2408e-de4f-4472-afe1-656dded901ff, 1 page(s)
+2026-02-06 21:45:42,177 - INFO - [OCR] image encoded: 0.08s
+2026-02-06 21:45:49,971 - INFO - [OCR] ollama generate: 7.79s, tokens: 17
+2026-02-06 21:45:49,972 - INFO - [OCR] TOTAL: 7.87s
+2026-02-06 21:46:12,321 - INFO - [upload] unwatermarked_1766838599957.png -> b5675d6e-a79d-4eab-9189-e17fb1286030, 1 page(s)
+2026-02-06 21:46:12,452 - INFO - [OCR] image encoded: 0.12s
+2026-02-06 21:46:15,425 - INFO - [OCR] ollama generate: 2.97s, tokens: 17
+2026-02-06 21:46:15,426 - INFO - [OCR] TOTAL: 3.09s
+2026-02-06 21:47:15,828 - ERROR - Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "C:\Users\voroj\AppData\Local\Programs\Python\Python310\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\voroj\AppData\Local\Programs\Python\Python310\lib\asyncio\proactor_events.py", line 162, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+2026-02-06 21:47:19,147 - INFO - [upload] Screenshot_2026-01-02-21-11-32-428_com.tencent.mm.jpg -> fe71b00c-c846-4588-a2e9-4f711e165729, 1 page(s)
+2026-02-06 21:47:19,197 - INFO - [OCR] image encoded: 0.04s
+2026-02-06 21:47:21,927 - INFO - [OCR] ollama generate: 2.73s, tokens: 17
+2026-02-06 21:47:21,928 - INFO - [OCR] TOTAL: 2.77s
+2026-02-06 21:47:42,880 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 21:47:42,963 - INFO - [cleanup] Removing orphan directory: uploads\1ed2408e-de4f-4472-afe1-656dded901ff
+2026-02-06 21:47:42,966 - INFO - [cleanup] Removing orphan directory: uploads\b5675d6e-a79d-4eab-9189-e17fb1286030
+2026-02-06 21:47:42,966 - INFO - [cleanup] Removing orphan directory: uploads\fe71b00c-c846-4588-a2e9-4f711e165729
+2026-02-06 21:47:48,852 - INFO - [upload] markdown-20260101050843.png -> 4a9415cc-8dd7-4b15-95d5-8bd59a22bc31, 1 page(s)
+2026-02-06 21:47:48,936 - INFO - [OCR] image encoded: 0.07s
+2026-02-06 21:47:50,808 - INFO - [OCR] ollama generate: 1.87s, tokens: 17
+2026-02-06 21:47:50,808 - INFO - [OCR] TOTAL: 1.94s
+2026-02-06 21:47:59,481 - INFO - [upload] 1_970184797_157_63_3_710529393_7f7f1f80f3d6655a877a59737167acbc.png -> 073d35bd-da93-461b-a279-7c48a346c0cd, 1 page(s)
+2026-02-06 21:47:59,509 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:48:00,193 - INFO - [OCR] ollama generate: 0.68s, tokens: 4
+2026-02-06 21:48:00,193 - INFO - [OCR] TOTAL: 0.70s
+2026-02-06 21:48:19,895 - INFO - [delete] Document 073d35bd-da93-461b-a279-7c48a346c0cd removed
+2026-02-06 21:48:20,570 - INFO - [upload] 教育部学历证书电子注册备案表_吴龙杰.pdf -> 1eb8d35a-3250-4d5a-a46e-09e18d170256, 1 page(s)
+2026-02-06 21:48:20,621 - INFO - [OCR] image encoded: 0.04s
+2026-02-06 21:48:23,043 - INFO - [OCR] ollama generate: 2.42s, tokens: 300
+2026-02-06 21:48:23,045 - INFO - [OCR] TOTAL: 2.46s
+2026-02-06 21:48:26,810 - INFO - [delete] Document 1eb8d35a-3250-4d5a-a46e-09e18d170256 removed
+2026-02-06 21:48:26,823 - INFO - [upload] page_001.png -> b112f2b8-d05e-4eb0-b8b0-55f0ca7ef8fe, 1 page(s)
+2026-02-06 21:48:26,863 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:48:28,644 - INFO - [OCR] ollama generate: 1.78s, tokens: 300
+2026-02-06 21:48:28,647 - INFO - [OCR] TOTAL: 1.82s
+2026-02-06 21:48:42,203 - INFO - [delete] Document b112f2b8-d05e-4eb0-b8b0-55f0ca7ef8fe removed
+2026-02-06 21:48:42,212 - INFO - [upload] 屏幕截图 2026-02-06 181559.png -> 681997fa-1f93-4a96-9191-46081bf43fb6, 1 page(s)
+2026-02-06 21:48:42,237 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:48:42,708 - INFO - [OCR] ollama generate: 0.47s, tokens: 3
+2026-02-06 21:48:42,709 - INFO - [OCR] TOTAL: 0.49s
+2026-02-06 21:48:48,832 - INFO - [delete] Document 681997fa-1f93-4a96-9191-46081bf43fb6 removed
+2026-02-06 21:48:49,516 - INFO - [upload] bard_google_com_share_7f7f5618c053.pdf -> 68001104-c37d-4d78-b8dc-8d90dacf334c, 1 page(s)
+2026-02-06 21:48:49,554 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 21:48:50,850 - INFO - [OCR] ollama generate: 1.29s, tokens: 87
+2026-02-06 21:48:50,850 - INFO - [OCR] TOTAL: 1.32s
+2026-02-06 21:48:55,749 - INFO - [delete] Document 68001104-c37d-4d78-b8dc-8d90dacf334c removed
+2026-02-06 21:48:55,771 - INFO - [upload] 5aS05p2hQOmGieaXtuWwmjIzMw==_urgvc3sg2gf.jpg -> 0e9913bb-dcc8-4bbf-9936-27d63fa42940, 1 page(s)
+2026-02-06 21:48:55,804 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 21:48:56,762 - INFO - [OCR] ollama generate: 0.96s, tokens: 9
+2026-02-06 21:48:56,763 - INFO - [OCR] TOTAL: 0.98s
+2026-02-06 21:49:10,860 - INFO - [delete] Document 0e9913bb-dcc8-4bbf-9936-27d63fa42940 removed
+2026-02-06 21:49:33,626 - INFO - [upload] 华为中层管理团队执行力与领导力提升培训课件(经典收藏).pdf -> bc050683-c920-49a5-a3bf-dec9c8f6aaa0, 120 page(s)
+2026-02-06 21:49:33,661 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:49:34,655 - INFO - [OCR] ollama generate: 0.99s, tokens: 22
+2026-02-06 21:49:34,656 - INFO - [OCR] TOTAL: 1.00s
+2026-02-06 21:50:11,410 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:50:13,061 - INFO - [OCR] ollama generate: 1.65s, tokens: 100
+2026-02-06 21:50:13,061 - INFO - [OCR] TOTAL: 1.65s
+2026-02-06 21:50:14,343 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:50:15,259 - INFO - [OCR] ollama generate: 0.92s, tokens: 16
+2026-02-06 21:50:15,259 - INFO - [OCR] TOTAL: 0.92s
+2026-02-06 21:50:31,328 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:50:32,525 - INFO - [OCR] ollama generate: 1.20s, tokens: 49
+2026-02-06 21:50:32,525 - INFO - [OCR] TOTAL: 1.20s
+2026-02-06 21:50:33,937 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:50:35,099 - INFO - [OCR] ollama generate: 1.16s, tokens: 84
+2026-02-06 21:50:35,099 - INFO - [OCR] TOTAL: 1.16s
+2026-02-06 21:50:38,348 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:50:39,880 - INFO - [OCR] ollama generate: 1.53s, tokens: 132
+2026-02-06 21:50:39,882 - INFO - [OCR] TOTAL: 1.54s
+2026-02-06 21:51:39,490 - INFO - [upload] 华为中层管理团队执行力与领导力提升培训课件(经典收藏).pdf -> 1ae29ac3-1b24-41e7-9d6e-159d45711058, 120 page(s)
+2026-02-06 21:51:48,997 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:51:50,217 - INFO - [OCR] ollama generate: 1.22s, tokens: 100
+2026-02-06 21:51:50,217 - INFO - [OCR] TOTAL: 1.22s
+2026-02-06 21:55:26,724 - INFO - [upload] 华为中层管理团队执行力与领导力提升培训课件(经典收藏).pdf -> 11ab6407-701a-481d-bb7b-52b9f3865017, 120 page(s)
+2026-02-06 21:55:26,740 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:55:27,554 - INFO - [OCR] ollama generate: 0.81s, tokens: 22
+2026-02-06 21:55:27,554 - INFO - [OCR] TOTAL: 0.82s
+2026-02-06 21:55:32,420 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 21:55:32,495 - INFO - [cleanup] Removing orphan directory: uploads\11ab6407-701a-481d-bb7b-52b9f3865017
+2026-02-06 21:55:32,510 - INFO - [cleanup] Removing orphan directory: uploads\1ae29ac3-1b24-41e7-9d6e-159d45711058
+2026-02-06 21:55:32,523 - INFO - [cleanup] Removing orphan directory: uploads\4a9415cc-8dd7-4b15-95d5-8bd59a22bc31
+2026-02-06 21:55:32,524 - INFO - [cleanup] Removing orphan directory: uploads\bc050683-c920-49a5-a3bf-dec9c8f6aaa0
+2026-02-06 21:55:39,517 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:55:40,632 - INFO - [OCR] ollama generate: 1.12s, tokens: 22
+2026-02-06 21:55:40,632 - INFO - [OCR] TOTAL: 1.13s
+2026-02-06 21:55:46,625 - INFO - [upload] 华为中层管理团队执行力与领导力提升培训课件(经典收藏).pdf -> e32cc421-a1c4-4830-b4cd-89985e4c7b61, 120 pages (streamed)
+2026-02-06 21:55:49,313 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:55:50,525 - INFO - [OCR] ollama generate: 1.21s, tokens: 100
+2026-02-06 21:55:50,525 - INFO - [OCR] TOTAL: 1.21s
+2026-02-06 21:55:51,444 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:55:52,203 - INFO - [OCR] ollama generate: 0.76s, tokens: 16
+2026-02-06 21:55:52,203 - INFO - [OCR] TOTAL: 0.76s
+2026-02-06 21:55:53,348 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:55:54,188 - INFO - [OCR] ollama generate: 0.84s, tokens: 49
+2026-02-06 21:55:54,188 - INFO - [OCR] TOTAL: 0.84s
+2026-02-06 21:55:55,730 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:55:56,682 - INFO - [OCR] ollama generate: 0.95s, tokens: 84
+2026-02-06 21:55:56,682 - INFO - [OCR] TOTAL: 0.95s
+2026-02-06 21:55:57,217 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:55:58,344 - INFO - [OCR] ollama generate: 1.13s, tokens: 132
+2026-02-06 21:55:58,344 - INFO - [OCR] TOTAL: 1.13s
+2026-02-06 21:56:03,580 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:04,687 - INFO - [OCR] ollama generate: 1.11s, tokens: 29
+2026-02-06 21:56:04,687 - INFO - [OCR] TOTAL: 1.11s
+2026-02-06 21:56:05,137 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:06,299 - INFO - [OCR] ollama generate: 1.16s, tokens: 144
+2026-02-06 21:56:06,299 - INFO - [OCR] TOTAL: 1.16s
+2026-02-06 21:56:10,153 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:11,522 - INFO - [OCR] ollama generate: 1.37s, tokens: 93
+2026-02-06 21:56:11,522 - INFO - [OCR] TOTAL: 1.37s
+2026-02-06 21:56:15,389 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:16,769 - INFO - [OCR] ollama generate: 1.38s, tokens: 137
+2026-02-06 21:56:16,769 - INFO - [OCR] TOTAL: 1.39s
+2026-02-06 21:56:16,772 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:17,593 - INFO - [OCR] ollama generate: 0.82s, tokens: 38
+2026-02-06 21:56:17,593 - INFO - [OCR] TOTAL: 0.82s
+2026-02-06 21:56:17,596 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:18,364 - INFO - [OCR] ollama generate: 0.77s, tokens: 28
+2026-02-06 21:56:18,364 - INFO - [OCR] TOTAL: 0.77s
+2026-02-06 21:56:18,368 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:19,531 - INFO - [OCR] ollama generate: 1.16s, tokens: 146
+2026-02-06 21:56:19,531 - INFO - [OCR] TOTAL: 1.16s
+2026-02-06 21:56:19,534 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:20,853 - INFO - [OCR] ollama generate: 1.32s, tokens: 192
+2026-02-06 21:56:20,853 - INFO - [OCR] TOTAL: 1.32s
+2026-02-06 21:56:20,857 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:21,850 - INFO - [OCR] ollama generate: 0.99s, tokens: 86
+2026-02-06 21:56:21,850 - INFO - [OCR] TOTAL: 0.99s
+2026-02-06 21:56:21,854 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:22,790 - INFO - [OCR] ollama generate: 0.94s, tokens: 83
+2026-02-06 21:56:22,790 - INFO - [OCR] TOTAL: 0.94s
+2026-02-06 21:56:22,794 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:23,517 - INFO - [OCR] ollama generate: 0.72s, tokens: 21
+2026-02-06 21:56:23,517 - INFO - [OCR] TOTAL: 0.72s
+2026-02-06 21:56:23,523 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:24,730 - INFO - [OCR] ollama generate: 1.21s, tokens: 156
+2026-02-06 21:56:24,730 - INFO - [OCR] TOTAL: 1.21s
+2026-02-06 21:56:24,734 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:25,853 - INFO - [OCR] ollama generate: 1.12s, tokens: 122
+2026-02-06 21:56:25,853 - INFO - [OCR] TOTAL: 1.12s
+2026-02-06 21:56:25,859 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:27,135 - INFO - [OCR] ollama generate: 1.28s, tokens: 130
+2026-02-06 21:56:27,136 - INFO - [OCR] TOTAL: 1.28s
+2026-02-06 21:56:27,140 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:28,288 - INFO - [OCR] ollama generate: 1.15s, tokens: 108
+2026-02-06 21:56:28,288 - INFO - [OCR] TOTAL: 1.15s
+2026-02-06 21:56:28,293 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:29,397 - INFO - [OCR] ollama generate: 1.10s, tokens: 125
+2026-02-06 21:56:29,397 - INFO - [OCR] TOTAL: 1.11s
+2026-02-06 21:56:29,400 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:30,588 - INFO - [OCR] ollama generate: 1.19s, tokens: 149
+2026-02-06 21:56:30,588 - INFO - [OCR] TOTAL: 1.19s
+2026-02-06 21:56:30,591 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:31,368 - INFO - [OCR] ollama generate: 0.78s, tokens: 13
+2026-02-06 21:56:31,368 - INFO - [OCR] TOTAL: 0.78s
+2026-02-06 21:56:31,371 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:32,222 - INFO - [OCR] ollama generate: 0.85s, tokens: 45
+2026-02-06 21:56:32,222 - INFO - [OCR] TOTAL: 0.85s
+2026-02-06 21:56:32,230 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:56:33,238 - INFO - [OCR] ollama generate: 1.01s, tokens: 81
+2026-02-06 21:56:33,238 - INFO - [OCR] TOTAL: 1.01s
+2026-02-06 21:56:33,243 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:34,701 - INFO - [OCR] ollama generate: 1.46s, tokens: 210
+2026-02-06 21:56:34,701 - INFO - [OCR] TOTAL: 1.46s
+2026-02-06 21:56:34,705 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:36,006 - INFO - [OCR] ollama generate: 1.30s, tokens: 170
+2026-02-06 21:56:36,007 - INFO - [OCR] TOTAL: 1.30s
+2026-02-06 21:56:36,010 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:37,105 - INFO - [OCR] ollama generate: 1.10s, tokens: 112
+2026-02-06 21:56:37,105 - INFO - [OCR] TOTAL: 1.10s
+2026-02-06 21:56:37,111 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:38,054 - INFO - [OCR] ollama generate: 0.94s, tokens: 54
+2026-02-06 21:56:38,054 - INFO - [OCR] TOTAL: 0.95s
+2026-02-06 21:56:38,061 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:39,235 - INFO - [OCR] ollama generate: 1.17s, tokens: 135
+2026-02-06 21:56:39,235 - INFO - [OCR] TOTAL: 1.18s
+2026-02-06 21:56:39,240 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:40,363 - INFO - [OCR] ollama generate: 1.12s, tokens: 110
+2026-02-06 21:56:40,363 - INFO - [OCR] TOTAL: 1.13s
+2026-02-06 21:56:40,369 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:41,728 - INFO - [OCR] ollama generate: 1.36s, tokens: 193
+2026-02-06 21:56:41,728 - INFO - [OCR] TOTAL: 1.36s
+2026-02-06 21:56:41,732 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:42,740 - INFO - [OCR] ollama generate: 1.01s, tokens: 86
+2026-02-06 21:56:42,740 - INFO - [OCR] TOTAL: 1.01s
+2026-02-06 21:56:42,745 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:43,840 - INFO - [OCR] ollama generate: 1.09s, tokens: 110
+2026-02-06 21:56:43,840 - INFO - [OCR] TOTAL: 1.10s
+2026-02-06 21:56:43,844 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:44,854 - INFO - [OCR] ollama generate: 1.01s, tokens: 78
+2026-02-06 21:56:44,855 - INFO - [OCR] TOTAL: 1.01s
+2026-02-06 21:56:44,859 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:45,747 - INFO - [OCR] ollama generate: 0.89s, tokens: 53
+2026-02-06 21:56:45,747 - INFO - [OCR] TOTAL: 0.89s
+2026-02-06 21:56:45,752 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:46,863 - INFO - [OCR] ollama generate: 1.11s, tokens: 118
+2026-02-06 21:56:46,863 - INFO - [OCR] TOTAL: 1.11s
+2026-02-06 21:56:46,867 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:47,674 - INFO - [OCR] ollama generate: 0.81s, tokens: 19
+2026-02-06 21:56:47,674 - INFO - [OCR] TOTAL: 0.81s
+2026-02-06 21:56:47,677 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:48,429 - INFO - [OCR] ollama generate: 0.75s, tokens: 14
+2026-02-06 21:56:48,429 - INFO - [OCR] TOTAL: 0.75s
+2026-02-06 21:56:48,437 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 21:56:49,251 - INFO - [OCR] ollama generate: 0.81s, tokens: 12
+2026-02-06 21:56:49,251 - INFO - [OCR] TOTAL: 0.82s
+2026-02-06 21:56:49,256 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:51,607 - INFO - [OCR] ollama generate: 2.35s, tokens: 98
+2026-02-06 21:56:51,608 - INFO - [OCR] TOTAL: 2.35s
+2026-02-06 21:56:51,611 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:53,652 - INFO - [OCR] ollama generate: 2.04s, tokens: 94
+2026-02-06 21:56:53,652 - INFO - [OCR] TOTAL: 2.04s
+2026-02-06 21:56:53,656 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:55,281 - INFO - [OCR] ollama generate: 1.63s, tokens: 35
+2026-02-06 21:56:55,282 - INFO - [OCR] TOTAL: 1.63s
+2026-02-06 21:56:55,286 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:57,130 - INFO - [OCR] ollama generate: 1.84s, tokens: 77
+2026-02-06 21:56:57,130 - INFO - [OCR] TOTAL: 1.85s
+2026-02-06 21:56:57,134 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:56:59,099 - INFO - [OCR] ollama generate: 1.96s, tokens: 77
+2026-02-06 21:56:59,099 - INFO - [OCR] TOTAL: 1.97s
+2026-02-06 21:56:59,107 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:00,970 - INFO - [OCR] ollama generate: 1.86s, tokens: 85
+2026-02-06 21:57:00,970 - INFO - [OCR] TOTAL: 1.87s
+2026-02-06 21:57:00,974 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:02,923 - INFO - [OCR] ollama generate: 1.95s, tokens: 99
+2026-02-06 21:57:02,923 - INFO - [OCR] TOTAL: 1.95s
+2026-02-06 21:57:02,928 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:04,804 - INFO - [OCR] ollama generate: 1.88s, tokens: 88
+2026-02-06 21:57:04,804 - INFO - [OCR] TOTAL: 1.88s
+2026-02-06 21:57:04,808 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:06,730 - INFO - [OCR] ollama generate: 1.92s, tokens: 90
+2026-02-06 21:57:06,730 - INFO - [OCR] TOTAL: 1.92s
+2026-02-06 21:57:06,734 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:08,317 - INFO - [OCR] ollama generate: 1.58s, tokens: 23
+2026-02-06 21:57:08,317 - INFO - [OCR] TOTAL: 1.58s
+2026-02-06 21:57:08,322 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:09,852 - INFO - [OCR] ollama generate: 1.53s, tokens: 34
+2026-02-06 21:57:09,852 - INFO - [OCR] TOTAL: 1.53s
+2026-02-06 21:57:09,856 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:11,817 - INFO - [OCR] ollama generate: 1.96s, tokens: 105
+2026-02-06 21:57:11,817 - INFO - [OCR] TOTAL: 1.96s
+2026-02-06 21:57:11,822 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:13,878 - INFO - [OCR] ollama generate: 2.05s, tokens: 114
+2026-02-06 21:57:13,878 - INFO - [OCR] TOTAL: 2.06s
+2026-02-06 21:57:13,882 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:15,544 - INFO - [OCR] ollama generate: 1.66s, tokens: 52
+2026-02-06 21:57:15,544 - INFO - [OCR] TOTAL: 1.66s
+2026-02-06 21:57:15,548 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:17,740 - INFO - [OCR] ollama generate: 2.19s, tokens: 111
+2026-02-06 21:57:17,740 - INFO - [OCR] TOTAL: 2.19s
+2026-02-06 21:57:17,746 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:19,554 - INFO - [OCR] ollama generate: 1.81s, tokens: 50
+2026-02-06 21:57:19,554 - INFO - [OCR] TOTAL: 1.81s
+2026-02-06 21:57:19,559 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:21,624 - INFO - [OCR] ollama generate: 2.06s, tokens: 108
+2026-02-06 21:57:21,624 - INFO - [OCR] TOTAL: 2.07s
+2026-02-06 21:57:21,628 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:23,805 - INFO - [OCR] ollama generate: 2.18s, tokens: 132
+2026-02-06 21:57:23,806 - INFO - [OCR] TOTAL: 2.18s
+2026-02-06 21:57:23,851 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:25,880 - INFO - [OCR] ollama generate: 2.03s, tokens: 77
+2026-02-06 21:57:25,881 - INFO - [OCR] TOTAL: 2.03s
+2026-02-06 21:57:25,885 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:27,748 - INFO - [OCR] ollama generate: 1.86s, tokens: 76
+2026-02-06 21:57:27,748 - INFO - [OCR] TOTAL: 1.86s
+2026-02-06 21:57:27,753 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:29,883 - INFO - [OCR] ollama generate: 2.13s, tokens: 110
+2026-02-06 21:57:29,883 - INFO - [OCR] TOTAL: 2.13s
+2026-02-06 21:57:29,886 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:31,683 - INFO - [OCR] ollama generate: 1.80s, tokens: 83
+2026-02-06 21:57:31,683 - INFO - [OCR] TOTAL: 1.80s
+2026-02-06 21:57:31,686 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:33,079 - INFO - [OCR] ollama generate: 1.39s, tokens: 9
+2026-02-06 21:57:33,079 - INFO - [OCR] TOTAL: 1.39s
+2026-02-06 21:57:33,082 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:35,114 - INFO - [OCR] ollama generate: 2.03s, tokens: 116
+2026-02-06 21:57:35,114 - INFO - [OCR] TOTAL: 2.03s
+2026-02-06 21:57:35,123 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:37,002 - INFO - [OCR] ollama generate: 1.88s, tokens: 69
+2026-02-06 21:57:37,002 - INFO - [OCR] TOTAL: 1.88s
+2026-02-06 21:57:37,007 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:38,755 - INFO - [OCR] ollama generate: 1.75s, tokens: 70
+2026-02-06 21:57:38,755 - INFO - [OCR] TOTAL: 1.75s
+2026-02-06 21:57:38,760 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:40,707 - INFO - [OCR] ollama generate: 1.95s, tokens: 105
+2026-02-06 21:57:40,707 - INFO - [OCR] TOTAL: 1.95s
+2026-02-06 21:57:40,711 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:43,385 - INFO - [OCR] ollama generate: 2.67s, tokens: 201
+2026-02-06 21:57:43,385 - INFO - [OCR] TOTAL: 2.68s
+2026-02-06 21:57:43,388 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:44,885 - INFO - [OCR] ollama generate: 1.50s, tokens: 33
+2026-02-06 21:57:44,885 - INFO - [OCR] TOTAL: 1.50s
+2026-02-06 21:57:44,888 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:46,361 - INFO - [OCR] ollama generate: 1.47s, tokens: 28
+2026-02-06 21:57:46,361 - INFO - [OCR] TOTAL: 1.47s
+2026-02-06 21:57:46,364 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:48,023 - INFO - [OCR] ollama generate: 1.66s, tokens: 55
+2026-02-06 21:57:48,023 - INFO - [OCR] TOTAL: 1.66s
+2026-02-06 21:57:48,028 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:49,633 - INFO - [OCR] ollama generate: 1.61s, tokens: 45
+2026-02-06 21:57:49,634 - INFO - [OCR] TOTAL: 1.61s
+2026-02-06 21:57:49,638 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:51,111 - INFO - [OCR] ollama generate: 1.47s, tokens: 21
+2026-02-06 21:57:51,111 - INFO - [OCR] TOTAL: 1.47s
+2026-02-06 21:57:51,116 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:53,131 - INFO - [OCR] ollama generate: 2.02s, tokens: 98
+2026-02-06 21:57:53,132 - INFO - [OCR] TOTAL: 2.02s
+2026-02-06 21:57:53,137 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:55,414 - INFO - [OCR] ollama generate: 2.28s, tokens: 138
+2026-02-06 21:57:55,414 - INFO - [OCR] TOTAL: 2.28s
+2026-02-06 21:57:55,417 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:57,748 - INFO - [OCR] ollama generate: 2.33s, tokens: 168
+2026-02-06 21:57:57,748 - INFO - [OCR] TOTAL: 2.33s
+2026-02-06 21:57:57,754 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:57:59,759 - INFO - [OCR] ollama generate: 2.01s, tokens: 111
+2026-02-06 21:57:59,760 - INFO - [OCR] TOTAL: 2.01s
+2026-02-06 21:57:59,765 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:01,879 - INFO - [OCR] ollama generate: 2.11s, tokens: 130
+2026-02-06 21:58:01,879 - INFO - [OCR] TOTAL: 2.12s
+2026-02-06 21:58:01,883 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:03,873 - INFO - [OCR] ollama generate: 1.99s, tokens: 113
+2026-02-06 21:58:03,873 - INFO - [OCR] TOTAL: 1.99s
+2026-02-06 21:58:03,878 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:06,549 - INFO - [OCR] ollama generate: 2.67s, tokens: 202
+2026-02-06 21:58:06,549 - INFO - [OCR] TOTAL: 2.67s
+2026-02-06 21:58:06,554 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:08,577 - INFO - [OCR] ollama generate: 2.02s, tokens: 115
+2026-02-06 21:58:08,577 - INFO - [OCR] TOTAL: 2.02s
+2026-02-06 21:58:08,581 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:09,980 - INFO - [OCR] ollama generate: 1.40s, tokens: 17
+2026-02-06 21:58:09,980 - INFO - [OCR] TOTAL: 1.40s
+2026-02-06 21:58:09,985 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:11,367 - INFO - [OCR] ollama generate: 1.38s, tokens: 15
+2026-02-06 21:58:11,367 - INFO - [OCR] TOTAL: 1.38s
+2026-02-06 21:58:11,372 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:13,180 - INFO - [OCR] ollama generate: 1.81s, tokens: 82
+2026-02-06 21:58:13,180 - INFO - [OCR] TOTAL: 1.81s
+2026-02-06 21:58:13,185 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:15,085 - INFO - [OCR] ollama generate: 1.90s, tokens: 102
+2026-02-06 21:58:15,085 - INFO - [OCR] TOTAL: 1.90s
+2026-02-06 21:58:15,091 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:16,891 - INFO - [OCR] ollama generate: 1.80s, tokens: 62
+2026-02-06 21:58:16,892 - INFO - [OCR] TOTAL: 1.80s
+2026-02-06 21:58:16,896 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:18,805 - INFO - [OCR] ollama generate: 1.91s, tokens: 82
+2026-02-06 21:58:18,805 - INFO - [OCR] TOTAL: 1.91s
+2026-02-06 21:58:18,809 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:20,451 - INFO - [OCR] ollama generate: 1.64s, tokens: 59
+2026-02-06 21:58:20,451 - INFO - [OCR] TOTAL: 1.64s
+2026-02-06 21:58:20,457 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:22,045 - INFO - [OCR] ollama generate: 1.59s, tokens: 44
+2026-02-06 21:58:22,045 - INFO - [OCR] TOTAL: 1.59s
+2026-02-06 21:58:22,050 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:23,755 - INFO - [OCR] ollama generate: 1.71s, tokens: 60
+2026-02-06 21:58:23,755 - INFO - [OCR] TOTAL: 1.71s
+2026-02-06 21:58:23,760 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:25,447 - INFO - [OCR] ollama generate: 1.69s, tokens: 52
+2026-02-06 21:58:25,447 - INFO - [OCR] TOTAL: 1.69s
+2026-02-06 21:58:25,450 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:26,869 - INFO - [OCR] ollama generate: 1.42s, tokens: 13
+2026-02-06 21:58:26,869 - INFO - [OCR] TOTAL: 1.42s
+2026-02-06 21:58:26,876 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:28,868 - INFO - [OCR] ollama generate: 1.99s, tokens: 109
+2026-02-06 21:58:28,868 - INFO - [OCR] TOTAL: 1.99s
+2026-02-06 21:58:28,872 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:30,334 - INFO - [OCR] ollama generate: 1.46s, tokens: 23
+2026-02-06 21:58:30,334 - INFO - [OCR] TOTAL: 1.46s
+2026-02-06 21:58:30,339 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:32,774 - INFO - [OCR] ollama generate: 2.44s, tokens: 184
+2026-02-06 21:58:32,774 - INFO - [OCR] TOTAL: 2.44s
+2026-02-06 21:58:32,779 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:35,329 - INFO - [OCR] ollama generate: 2.55s, tokens: 196
+2026-02-06 21:58:35,329 - INFO - [OCR] TOTAL: 2.55s
+2026-02-06 21:58:35,333 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:37,044 - INFO - [OCR] ollama generate: 1.71s, tokens: 42
+2026-02-06 21:58:37,044 - INFO - [OCR] TOTAL: 1.71s
+2026-02-06 21:58:37,049 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:38,459 - INFO - [OCR] ollama generate: 1.41s, tokens: 16
+2026-02-06 21:58:38,459 - INFO - [OCR] TOTAL: 1.41s
+2026-02-06 21:58:38,464 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:40,385 - INFO - [OCR] ollama generate: 1.92s, tokens: 100
+2026-02-06 21:58:40,385 - INFO - [OCR] TOTAL: 1.92s
+2026-02-06 21:58:40,391 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:42,051 - INFO - [OCR] ollama generate: 1.66s, tokens: 57
+2026-02-06 21:58:42,051 - INFO - [OCR] TOTAL: 1.66s
+2026-02-06 21:58:42,054 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:43,812 - INFO - [OCR] ollama generate: 1.76s, tokens: 75
+2026-02-06 21:58:43,813 - INFO - [OCR] TOTAL: 1.76s
+2026-02-06 21:58:43,819 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:45,943 - INFO - [OCR] ollama generate: 2.12s, tokens: 128
+2026-02-06 21:58:45,944 - INFO - [OCR] TOTAL: 2.13s
+2026-02-06 21:58:45,948 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:47,385 - INFO - [OCR] ollama generate: 1.44s, tokens: 16
+2026-02-06 21:58:47,385 - INFO - [OCR] TOTAL: 1.44s
+2026-02-06 21:58:47,391 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:49,228 - INFO - [OCR] ollama generate: 1.84s, tokens: 86
+2026-02-06 21:58:49,228 - INFO - [OCR] TOTAL: 1.84s
+2026-02-06 21:58:49,232 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:51,196 - INFO - [OCR] ollama generate: 1.96s, tokens: 108
+2026-02-06 21:58:51,196 - INFO - [OCR] TOTAL: 1.96s
+2026-02-06 21:58:51,201 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:53,013 - INFO - [OCR] ollama generate: 1.81s, tokens: 79
+2026-02-06 21:58:53,014 - INFO - [OCR] TOTAL: 1.81s
+2026-02-06 21:58:53,019 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:55,323 - INFO - [OCR] ollama generate: 2.30s, tokens: 155
+2026-02-06 21:58:55,323 - INFO - [OCR] TOTAL: 2.31s
+2026-02-06 21:58:55,327 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:57,272 - INFO - [OCR] ollama generate: 1.94s, tokens: 80
+2026-02-06 21:58:57,272 - INFO - [OCR] TOTAL: 1.95s
+2026-02-06 21:58:57,275 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:58:59,478 - INFO - [OCR] ollama generate: 2.20s, tokens: 125
+2026-02-06 21:58:59,478 - INFO - [OCR] TOTAL: 2.20s
+2026-02-06 21:58:59,483 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:01,040 - INFO - [OCR] ollama generate: 1.56s, tokens: 17
+2026-02-06 21:59:01,040 - INFO - [OCR] TOTAL: 1.56s
+2026-02-06 21:59:01,047 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:02,927 - INFO - [OCR] ollama generate: 1.88s, tokens: 88
+2026-02-06 21:59:02,927 - INFO - [OCR] TOTAL: 1.88s
+2026-02-06 21:59:02,931 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:04,847 - INFO - [OCR] ollama generate: 1.92s, tokens: 94
+2026-02-06 21:59:04,847 - INFO - [OCR] TOTAL: 1.92s
+2026-02-06 21:59:04,852 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:06,494 - INFO - [OCR] ollama generate: 1.64s, tokens: 51
+2026-02-06 21:59:06,494 - INFO - [OCR] TOTAL: 1.64s
+2026-02-06 21:59:06,500 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:08,734 - INFO - [OCR] ollama generate: 2.23s, tokens: 130
+2026-02-06 21:59:08,734 - INFO - [OCR] TOTAL: 2.24s
+2026-02-06 21:59:08,739 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:10,825 - INFO - [OCR] ollama generate: 2.09s, tokens: 123
+2026-02-06 21:59:10,825 - INFO - [OCR] TOTAL: 2.09s
+2026-02-06 21:59:10,829 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:12,295 - INFO - [OCR] ollama generate: 1.47s, tokens: 19
+2026-02-06 21:59:12,295 - INFO - [OCR] TOTAL: 1.47s
+2026-02-06 21:59:12,300 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:14,609 - INFO - [OCR] ollama generate: 2.31s, tokens: 143
+2026-02-06 21:59:14,609 - INFO - [OCR] TOTAL: 2.31s
+2026-02-06 21:59:14,615 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:16,263 - INFO - [OCR] ollama generate: 1.65s, tokens: 53
+2026-02-06 21:59:16,263 - INFO - [OCR] TOTAL: 1.65s
+2026-02-06 21:59:16,270 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 21:59:17,732 - INFO - [OCR] ollama generate: 1.46s, tokens: 21
+2026-02-06 21:59:17,732 - INFO - [OCR] TOTAL: 1.46s
+2026-02-06 22:00:53,804 - INFO - [upload] unwatermarked_1766835413681.png -> b62dd129-feb8-4357-856a-344c9e132346, 1 page
+2026-02-06 22:00:53,834 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 22:00:54,911 - INFO - [OCR] ollama generate: 1.08s, tokens: 17
+2026-02-06 22:00:54,911 - INFO - [OCR] TOTAL: 1.10s
+2026-02-06 22:01:05,084 - INFO - [upload] 07f5b70efe641eacb9941ec964dcece6.png -> 7830e2fb-61a3-4323-9baa-3a392570d3ca, 1 page
+2026-02-06 22:01:05,093 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:01:05,472 - INFO - [OCR] ollama generate: 0.38s, tokens: 11
+2026-02-06 22:01:05,472 - INFO - [OCR] TOTAL: 0.38s
+2026-02-06 22:07:13,420 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 22:07:13,497 - INFO - [cleanup] Removing orphan directory: uploads\7830e2fb-61a3-4323-9baa-3a392570d3ca
+2026-02-06 22:07:13,497 - INFO - [cleanup] Removing orphan directory: uploads\b62dd129-feb8-4357-856a-344c9e132346
+2026-02-06 22:07:13,498 - INFO - [cleanup] Removing orphan directory: uploads\e32cc421-a1c4-4830-b4cd-89985e4c7b61
+2026-02-06 22:08:24,737 - INFO - [OCR] image encoded: 0.03s
+2026-02-06 22:08:28,854 - INFO - [upload] 系统性问题解决之道.pdf -> fd0cf722-4bf7-401f-901e-99715780c0c0, 13 page(s)
+2026-02-06 22:08:29,273 - INFO - [OCR] ollama generate: 4.54s, tokens: 17
+2026-02-06 22:08:29,273 - INFO - [OCR] TOTAL: 4.57s
+2026-02-06 22:08:30,979 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:08:31,573 - INFO - [OCR] ollama generate: 0.59s, tokens: 17
+2026-02-06 22:08:31,573 - INFO - [OCR] TOTAL: 0.60s
+2026-02-06 22:08:32,164 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:08:32,762 - INFO - [OCR] ollama generate: 0.60s, tokens: 17
+2026-02-06 22:08:32,763 - INFO - [OCR] TOTAL: 0.61s
+2026-02-06 22:09:04,034 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 22:09:07,011 - INFO - [OCR] ollama generate: 2.98s, tokens: 420
+2026-02-06 22:09:07,011 - INFO - [OCR] TOTAL: 2.99s
+2026-02-06 22:09:07,254 - INFO - [upload] 2024中医针灸学（中级）_专业技术资格考试大纲.pdf -> 39d0990a-bb09-437c-9d0a-d66821c7c51a, 51 page(s)
+2026-02-06 22:09:08,799 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:11,598 - INFO - [OCR] ollama generate: 2.80s, tokens: 547
+2026-02-06 22:09:11,598 - INFO - [OCR] TOTAL: 2.80s
+2026-02-06 22:09:12,672 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:15,325 - INFO - [OCR] ollama generate: 2.65s, tokens: 534
+2026-02-06 22:09:15,325 - INFO - [OCR] TOTAL: 2.65s
+2026-02-06 22:09:16,044 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:18,325 - INFO - [OCR] ollama generate: 2.28s, tokens: 429
+2026-02-06 22:09:18,325 - INFO - [OCR] TOTAL: 2.28s
+2026-02-06 22:09:19,717 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:22,531 - INFO - [OCR] ollama generate: 2.81s, tokens: 595
+2026-02-06 22:09:22,531 - INFO - [OCR] TOTAL: 2.82s
+2026-02-06 22:09:22,535 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:26,204 - INFO - [OCR] ollama generate: 3.67s, tokens: 826
+2026-02-06 22:09:26,205 - INFO - [OCR] TOTAL: 3.67s
+2026-02-06 22:09:26,209 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:29,630 - INFO - [OCR] ollama generate: 3.42s, tokens: 750
+2026-02-06 22:09:29,630 - INFO - [OCR] TOTAL: 3.42s
+2026-02-06 22:09:29,636 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:32,470 - INFO - [OCR] ollama generate: 2.83s, tokens: 611
+2026-02-06 22:09:32,471 - INFO - [OCR] TOTAL: 2.84s
+2026-02-06 22:09:32,475 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:35,563 - INFO - [OCR] ollama generate: 3.09s, tokens: 692
+2026-02-06 22:09:35,563 - INFO - [OCR] TOTAL: 3.09s
+2026-02-06 22:09:35,569 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:38,366 - INFO - [OCR] ollama generate: 2.80s, tokens: 616
+2026-02-06 22:09:38,366 - INFO - [OCR] TOTAL: 2.80s
+2026-02-06 22:09:38,370 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:41,378 - INFO - [OCR] ollama generate: 3.01s, tokens: 635
+2026-02-06 22:09:41,378 - INFO - [OCR] TOTAL: 3.01s
+2026-02-06 22:09:41,382 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:44,457 - INFO - [OCR] ollama generate: 3.08s, tokens: 680
+2026-02-06 22:09:44,458 - INFO - [OCR] TOTAL: 3.08s
+2026-02-06 22:09:44,462 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:50,207 - INFO - [OCR] ollama generate: 5.74s, tokens: 721
+2026-02-06 22:09:50,207 - INFO - [OCR] TOTAL: 5.75s
+2026-02-06 22:09:50,213 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:09:56,117 - INFO - [OCR] ollama generate: 5.90s, tokens: 734
+2026-02-06 22:09:56,117 - INFO - [OCR] TOTAL: 5.91s
+2026-02-06 22:09:56,122 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:01,533 - INFO - [OCR] ollama generate: 5.41s, tokens: 659
+2026-02-06 22:10:01,533 - INFO - [OCR] TOTAL: 5.41s
+2026-02-06 22:10:01,536 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:07,159 - INFO - [OCR] ollama generate: 5.62s, tokens: 680
+2026-02-06 22:10:07,159 - INFO - [OCR] TOTAL: 5.62s
+2026-02-06 22:10:07,163 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:13,057 - INFO - [OCR] ollama generate: 5.89s, tokens: 741
+2026-02-06 22:10:13,057 - INFO - [OCR] TOTAL: 5.90s
+2026-02-06 22:10:13,061 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:19,051 - INFO - [OCR] ollama generate: 5.99s, tokens: 743
+2026-02-06 22:10:19,051 - INFO - [OCR] TOTAL: 5.99s
+2026-02-06 22:10:19,053 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:23,934 - INFO - [OCR] ollama generate: 4.88s, tokens: 572
+2026-02-06 22:10:23,935 - INFO - [OCR] TOTAL: 4.88s
+2026-02-06 22:10:23,938 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:29,165 - INFO - [OCR] ollama generate: 5.23s, tokens: 633
+2026-02-06 22:10:29,166 - INFO - [OCR] TOTAL: 5.23s
+2026-02-06 22:10:29,170 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:34,911 - INFO - [OCR] ollama generate: 5.74s, tokens: 728
+2026-02-06 22:10:34,911 - INFO - [OCR] TOTAL: 5.74s
+2026-02-06 22:10:34,915 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:38,558 - INFO - [OCR] ollama generate: 3.64s, tokens: 390
+2026-02-06 22:10:38,558 - INFO - [OCR] TOTAL: 3.64s
+2026-02-06 22:10:38,562 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:43,027 - INFO - [OCR] ollama generate: 4.46s, tokens: 520
+2026-02-06 22:10:43,028 - INFO - [OCR] TOTAL: 4.47s
+2026-02-06 22:10:43,032 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:47,923 - INFO - [OCR] ollama generate: 4.89s, tokens: 588
+2026-02-06 22:10:47,923 - INFO - [OCR] TOTAL: 4.89s
+2026-02-06 22:10:47,928 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:52,976 - INFO - [OCR] ollama generate: 5.05s, tokens: 612
+2026-02-06 22:10:52,977 - INFO - [OCR] TOTAL: 5.05s
+2026-02-06 22:10:52,980 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:10:57,879 - INFO - [OCR] ollama generate: 4.90s, tokens: 595
+2026-02-06 22:10:57,880 - INFO - [OCR] TOTAL: 4.90s
+2026-02-06 22:10:57,884 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:02,385 - INFO - [OCR] ollama generate: 4.50s, tokens: 524
+2026-02-06 22:11:02,385 - INFO - [OCR] TOTAL: 4.50s
+2026-02-06 22:11:02,389 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:06,365 - INFO - [OCR] ollama generate: 3.98s, tokens: 446
+2026-02-06 22:11:06,365 - INFO - [OCR] TOTAL: 3.98s
+2026-02-06 22:11:06,370 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:10,699 - INFO - [OCR] ollama generate: 4.33s, tokens: 498
+2026-02-06 22:11:10,699 - INFO - [OCR] TOTAL: 4.33s
+2026-02-06 22:11:10,705 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:15,211 - INFO - [OCR] ollama generate: 4.51s, tokens: 525
+2026-02-06 22:11:15,211 - INFO - [OCR] TOTAL: 4.51s
+2026-02-06 22:11:15,216 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:19,778 - INFO - [OCR] ollama generate: 4.56s, tokens: 544
+2026-02-06 22:11:19,778 - INFO - [OCR] TOTAL: 4.56s
+2026-02-06 22:11:19,782 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:23,396 - INFO - [OCR] ollama generate: 3.61s, tokens: 380
+2026-02-06 22:11:23,396 - INFO - [OCR] TOTAL: 3.61s
+2026-02-06 22:11:23,398 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:27,946 - INFO - [OCR] ollama generate: 4.55s, tokens: 543
+2026-02-06 22:11:27,946 - INFO - [OCR] TOTAL: 4.55s
+2026-02-06 22:11:27,950 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:32,451 - INFO - [OCR] ollama generate: 4.50s, tokens: 526
+2026-02-06 22:11:32,452 - INFO - [OCR] TOTAL: 4.50s
+2026-02-06 22:11:32,457 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:36,631 - INFO - [OCR] ollama generate: 4.17s, tokens: 445
+2026-02-06 22:11:36,631 - INFO - [OCR] TOTAL: 4.17s
+2026-02-06 22:11:36,635 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:40,588 - INFO - [OCR] ollama generate: 3.95s, tokens: 444
+2026-02-06 22:11:40,588 - INFO - [OCR] TOTAL: 3.95s
+2026-02-06 22:11:40,591 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:11:42,336 - INFO - [OCR] ollama generate: 1.74s, tokens: 82
+2026-02-06 22:11:42,336 - INFO - [OCR] TOTAL: 1.74s
+2026-02-06 22:11:48,675 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-06 22:11:48,754 - INFO - [cleanup] Removing orphan directory: uploads\39d0990a-bb09-437c-9d0a-d66821c7c51a
+2026-02-06 22:11:48,759 - INFO - [cleanup] Removing orphan directory: uploads\fd0cf722-4bf7-401f-901e-99715780c0c0
+2026-02-06 22:13:07,674 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:13:08,177 - INFO - [upload] 创业科学运营，李想.pdf -> 6acf16a1-d018-4637-b0fa-bffcb7b4df26, 13 page(s)
+2026-02-06 22:13:09,722 - INFO - [OCR] ollama generate: 2.05s, tokens: 190
+2026-02-06 22:13:09,722 - INFO - [OCR] TOTAL: 2.06s
+2026-02-06 22:13:11,666 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:13,564 - INFO - [OCR] ollama generate: 1.90s, tokens: 244
+2026-02-06 22:13:13,564 - INFO - [OCR] TOTAL: 1.90s
+2026-02-06 22:13:15,203 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:17,133 - INFO - [OCR] ollama generate: 1.93s, tokens: 246
+2026-02-06 22:13:17,133 - INFO - [OCR] TOTAL: 1.93s
+2026-02-06 22:13:18,206 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:20,267 - INFO - [OCR] ollama generate: 2.06s, tokens: 316
+2026-02-06 22:13:20,267 - INFO - [OCR] TOTAL: 2.06s
+2026-02-06 22:13:22,147 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:24,616 - INFO - [OCR] ollama generate: 2.47s, tokens: 374
+2026-02-06 22:13:24,617 - INFO - [OCR] TOTAL: 2.47s
+2026-02-06 22:13:27,870 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:30,173 - INFO - [OCR] ollama generate: 2.30s, tokens: 337
+2026-02-06 22:13:30,173 - INFO - [OCR] TOTAL: 2.31s
+2026-02-06 22:13:30,177 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:32,391 - INFO - [OCR] ollama generate: 2.21s, tokens: 364
+2026-02-06 22:13:32,391 - INFO - [OCR] TOTAL: 2.21s
+2026-02-06 22:13:32,396 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:34,348 - INFO - [OCR] ollama generate: 1.95s, tokens: 295
+2026-02-06 22:13:34,348 - INFO - [OCR] TOTAL: 1.95s
+2026-02-06 22:13:34,353 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:36,789 - INFO - [OCR] ollama generate: 2.44s, tokens: 419
+2026-02-06 22:13:36,789 - INFO - [OCR] TOTAL: 2.44s
+2026-02-06 22:13:36,794 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:39,021 - INFO - [OCR] ollama generate: 2.23s, tokens: 364
+2026-02-06 22:13:39,023 - INFO - [OCR] TOTAL: 2.23s
+2026-02-06 22:13:39,028 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:41,323 - INFO - [OCR] ollama generate: 2.30s, tokens: 398
+2026-02-06 22:13:41,323 - INFO - [OCR] TOTAL: 2.30s
+2026-02-06 22:13:41,332 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:43,818 - INFO - [OCR] ollama generate: 2.49s, tokens: 415
+2026-02-06 22:13:43,819 - INFO - [OCR] TOTAL: 2.49s
+2026-02-06 22:13:43,823 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:13:45,498 - INFO - [OCR] ollama generate: 1.67s, tokens: 200
+2026-02-06 22:13:45,498 - INFO - [OCR] TOTAL: 1.68s
+2026-02-06 22:23:23,994 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 22:23:24,421 - INFO - [upload] 创业科学运营，李想.pdf -> 588ca405-efbf-4795-84d5-6428cb884a7d, 13 page(s)
+2026-02-06 22:23:28,940 - INFO - [OCR] ollama generate: 4.95s, tokens: 190
+2026-02-06 22:23:28,941 - INFO - [OCR] TOTAL: 4.96s
+2026-02-06 22:23:31,413 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:23:33,437 - INFO - [OCR] ollama generate: 2.02s, tokens: 244
+2026-02-06 22:23:33,437 - INFO - [OCR] TOTAL: 2.03s
+2026-02-06 22:23:37,053 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:23:38,963 - INFO - [OCR] ollama generate: 1.91s, tokens: 246
+2026-02-06 22:23:38,963 - INFO - [OCR] TOTAL: 1.91s
+2026-02-06 22:23:41,337 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:23:43,619 - INFO - [OCR] ollama generate: 2.28s, tokens: 316
+2026-02-06 22:23:43,620 - INFO - [OCR] TOTAL: 2.29s
+2026-02-06 22:23:54,935 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:23:57,438 - INFO - [OCR] ollama generate: 2.50s, tokens: 374
+2026-02-06 22:23:57,438 - INFO - [OCR] TOTAL: 2.51s
+2026-02-06 22:24:08,220 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:10,700 - INFO - [OCR] ollama generate: 2.48s, tokens: 337
+2026-02-06 22:24:10,700 - INFO - [OCR] TOTAL: 2.48s
+2026-02-06 22:24:10,703 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:12,803 - INFO - [OCR] ollama generate: 2.10s, tokens: 364
+2026-02-06 22:24:12,803 - INFO - [OCR] TOTAL: 2.10s
+2026-02-06 22:24:12,808 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:14,644 - INFO - [OCR] ollama generate: 1.84s, tokens: 295
+2026-02-06 22:24:14,644 - INFO - [OCR] TOTAL: 1.84s
+2026-02-06 22:24:14,648 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:16,885 - INFO - [OCR] ollama generate: 2.24s, tokens: 419
+2026-02-06 22:24:16,885 - INFO - [OCR] TOTAL: 2.24s
+2026-02-06 22:24:16,889 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:18,948 - INFO - [OCR] ollama generate: 2.06s, tokens: 364
+2026-02-06 22:24:18,948 - INFO - [OCR] TOTAL: 2.06s
+2026-02-06 22:24:18,953 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:21,145 - INFO - [OCR] ollama generate: 2.19s, tokens: 398
+2026-02-06 22:24:21,145 - INFO - [OCR] TOTAL: 2.19s
+2026-02-06 22:24:21,149 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:23,400 - INFO - [OCR] ollama generate: 2.25s, tokens: 415
+2026-02-06 22:24:23,400 - INFO - [OCR] TOTAL: 2.25s
+2026-02-06 22:24:23,403 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:24:24,897 - INFO - [OCR] ollama generate: 1.49s, tokens: 200
+2026-02-06 22:24:24,897 - INFO - [OCR] TOTAL: 1.50s
+2026-02-06 22:24:46,275 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 22:24:46,780 - INFO - [upload] 创业科学运营，李想.pdf -> 6cb27741-87b5-4280-b800-09a5735cf51a, 13 page(s)
+2026-02-06 22:24:48,353 - INFO - [OCR] ollama generate: 2.08s, tokens: 190
+2026-02-06 22:24:48,353 - INFO - [OCR] TOTAL: 2.10s
+2026-02-06 22:25:10,284 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:25:10,658 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:25:12,142 - INFO - [OCR] ollama generate: 1.86s, tokens: 244
+2026-02-06 22:25:12,142 - INFO - [OCR] TOTAL: 1.86s
+2026-02-06 22:25:13,740 - INFO - [OCR] ollama generate: 3.08s, tokens: 246
+2026-02-06 22:25:13,740 - INFO - [OCR] TOTAL: 3.08s
+2026-02-06 22:25:54,319 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:25:56,595 - INFO - [OCR] ollama generate: 2.28s, tokens: 316
+2026-02-06 22:25:56,596 - INFO - [OCR] TOTAL: 2.28s
+2026-02-06 22:25:56,600 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:25:58,741 - INFO - [OCR] ollama generate: 2.14s, tokens: 374
+2026-02-06 22:25:58,741 - INFO - [OCR] TOTAL: 2.14s
+2026-02-06 22:25:58,745 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:00,717 - INFO - [OCR] ollama generate: 1.97s, tokens: 337
+2026-02-06 22:26:00,717 - INFO - [OCR] TOTAL: 1.97s
+2026-02-06 22:26:00,721 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:02,801 - INFO - [OCR] ollama generate: 2.08s, tokens: 364
+2026-02-06 22:26:02,801 - INFO - [OCR] TOTAL: 2.08s
+2026-02-06 22:26:02,805 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:04,657 - INFO - [OCR] ollama generate: 1.85s, tokens: 295
+2026-02-06 22:26:04,657 - INFO - [OCR] TOTAL: 1.85s
+2026-02-06 22:26:04,660 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:06,954 - INFO - [OCR] ollama generate: 2.29s, tokens: 419
+2026-02-06 22:26:06,954 - INFO - [OCR] TOTAL: 2.29s
+2026-02-06 22:26:06,958 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:09,058 - INFO - [OCR] ollama generate: 2.10s, tokens: 364
+2026-02-06 22:26:09,058 - INFO - [OCR] TOTAL: 2.10s
+2026-02-06 22:26:09,065 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:11,314 - INFO - [OCR] ollama generate: 2.25s, tokens: 398
+2026-02-06 22:26:11,314 - INFO - [OCR] TOTAL: 2.25s
+2026-02-06 22:26:11,319 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:13,626 - INFO - [OCR] ollama generate: 2.30s, tokens: 415
+2026-02-06 22:26:13,626 - INFO - [OCR] TOTAL: 2.31s
+2026-02-06 22:26:13,630 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:26:15,167 - INFO - [OCR] ollama generate: 1.54s, tokens: 200
+2026-02-06 22:26:15,167 - INFO - [OCR] TOTAL: 1.54s

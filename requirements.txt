@@ -1,0 +1,6 @@
+# Ollama 后端依赖
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart
+httpx>=0.25.0
+pymupdf>=1.23.0
