@@ -17,6 +17,7 @@ from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 import json
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import re
 from html.parser import HTMLParser
@@ -24,8 +25,6 @@ from urllib.parse import quote
 import fitz  # PyMuPDF for PDF processing
 from PIL import Image
 import io
-import torch
-from transformers import AutoImageProcessor, AutoModelForObjectDetection
 from pydantic import BaseModel
 from docx import Document as DocxDocument
 from docx.shared import Pt, RGBColor
@@ -95,12 +94,13 @@ _LAYOUT_SOLO_LABELS = {"table", "figure"}
 _LAYOUT_THRESHOLD = 0.5
 
 
-@app.on_event("startup")
-async def startup_event():
-    global _http_client, _layout_processor, _layout_model
-    _http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
-
-    # Load layout detection model
+def _ensure_layout_model():
+    """Lazy-load torch + transformers + layout model on first use."""
+    global _layout_processor, _layout_model
+    if _layout_model is not None:
+        return
+    import torch
+    from transformers import AutoImageProcessor, AutoModelForObjectDetection
     t0 = time.time()
     logger.info(f"[layout] Loading {_LAYOUT_MODEL_NAME}...")
     _layout_processor = AutoImageProcessor.from_pretrained(_LAYOUT_MODEL_NAME)
@@ -111,6 +111,12 @@ async def startup_event():
     else:
         logger.info(f"[layout] Model loaded on CPU: {time.time() - t0:.2f}s")
     _layout_model.eval()
+
+
+@app.on_event("startup")
+async def startup_event():
+    global _http_client
+    _http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
 
     # Clean up orphan directories from previous runs
     for child in UPLOAD_DIR.iterdir():
@@ -148,6 +154,8 @@ def detect_layout(img: Image.Image) -> list[dict]:
     """Detect document layout regions using PP-DocLayoutV3.
     Returns [{label, bbox: [x1,y1,x2,y2], score}] sorted by reading order (top-to-bottom).
     """
+    import torch
+    _ensure_layout_model()
     device = next(_layout_model.parameters()).device
     inputs = _layout_processor(images=img, return_tensors="pt")
     inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -422,6 +430,7 @@ async def status():
     return {
         "status": "running",
         "model_loaded": ollama["model_loaded"],
+        "layout_loaded": _layout_model is not None,
         "device": "ollama",
         "gpu": {"name": f"Ollama ({OLLAMA_MODEL})"} if ollama["online"] else None,
     }
@@ -461,7 +470,11 @@ async def ensure_ollama_running() -> dict:
 
 @app.post("/api/load-model")
 async def load_model_endpoint():
-    """Start Ollama if needed, then pre-warm model into GPU"""
+    """Load layout model + start Ollama + pre-warm OCR model"""
+    # Load layout detection model (heavy: torch + transformers)
+    if _layout_model is None:
+        await asyncio.to_thread(_ensure_layout_model)
+
     ollama = await ensure_ollama_running()
 
     if not ollama["model_loaded"]:
@@ -476,7 +489,7 @@ async def load_model_endpoint():
         logger.info(f"[load_model] Warmup done: {time.time() - t0:.2f}s")
     except Exception as e:
         logger.warning(f"[load_model] Warmup failed: {e}")
-    return {"success": True, "message": f"Model {OLLAMA_MODEL} loaded into GPU"}
+    return {"success": True, "message": "All models loaded"}
 
 
 ALLOWED_SUFFIXES = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.pdf'}
@@ -943,6 +956,11 @@ async def export_docx(doc_id: str, req: _ExportRequest):
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
         },
     )
+
+
+# Static files — must be last so it doesn't shadow API routes
+# Serves any file in the project root (style.css, script.js, etc.)
+app.mount("/", StaticFiles(directory="."), name="static")
 
 
 if __name__ == "__main__":
