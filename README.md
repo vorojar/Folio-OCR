@@ -4,6 +4,8 @@
 
 ![架构](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square) ![前端](https://img.shields.io/badge/Frontend-Vanilla_JS-F7DF1E?style=flat-square) ![数据库](https://img.shields.io/badge/DB-SQLite-003B57?style=flat-square)
 
+![Folio-OCR 界面截图](demo.png)
+
 ## 功能特性
 
 ### OCR 核心
