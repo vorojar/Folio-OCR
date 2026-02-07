@@ -9,7 +9,7 @@ const state = {
     isLoadingModel: false,
     ocrRunning: false,
     ocrAbort: false,
-    viewMode: 'edit',
+    viewMode: 'preview',
     layoutEnabled: true,
     docs: [],  // [{doc_id, filename, page_count, ocr_count, created_at}]
 };

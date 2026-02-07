@@ -44,6 +44,17 @@ body {
     color: var(--accent);
 }
 
+.topbar-github {
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+}
+
+.topbar-github:hover {
+    color: #fff;
+}
+
 .topbar-divider {
     width: 1px;
     height: 24px;
