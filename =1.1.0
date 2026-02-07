@@ -1,0 +1,12 @@
+Looking in indexes: https://pypi.org/simple, https://pypi.ngc.nvidia.com
+Collecting python-docx
+  Downloading python_docx-1.2.0-py3-none-any.whl.metadata (2.0 kB)
+Requirement already satisfied: lxml>=3.1.0 in c:\users\voroj\appdata\local\programs\python\python310\lib\site-packages (from python-docx) (6.0.2)
+Requirement already satisfied: typing_extensions>=4.9.0 in c:\users\voroj\appdata\local\programs\python\python310\lib\site-packages (from python-docx) (4.15.0)
+Downloading python_docx-1.2.0-py3-none-any.whl (252 kB)
+   ---------------------------------------- 253.0/253.0 kB 3.9 MB/s eta 0:00:00
+Installing collected packages: python-docx
+Successfully installed python-docx-1.2.0
+
+[notice] A new release of pip is available: 24.0 -> 26.0.1
+[notice] To update, run: python.exe -m pip install --upgrade pip

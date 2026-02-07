@@ -7,3 +7,4 @@ pymupdf>=1.23.0
 Pillow>=10.0.0
 transformers>=4.40.0
 torch>=2.0.0
+python-docx>=1.1.0

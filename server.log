@@ -1407,3 +1407,45 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-02-07 09:47:16,185 - INFO - [OCR] Region 10/11 (text): 39 chars
 2026-02-07 09:47:16,341 - INFO - [OCR] Region 11/11 (text): 39 chars
 2026-02-07 09:47:16,341 - INFO - [OCR] TOTAL: 15.42s (11 regions)
+2026-02-07 10:08:25,824 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 10:09:07,856 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 10:09:08,274 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 10:09:10,579 - INFO - [layout] Model loaded on CUDA: 2.30s
+2026-02-07 10:09:10,580 - INFO - [cleanup] Removing orphan directory: uploads\73c2d5d2-66cb-4a8d-9858-476ec08ba626
+2026-02-07 10:09:10,590 - INFO - [cleanup] Removing orphan directory: uploads\7f06beb4-d7cd-4669-a9b3-348c2a3849a1
+2026-02-07 10:09:10,597 - INFO - [cleanup] Removing orphan directory: uploads\d5216686-48d2-4877-9b0d-a5d63c8ce66f
+2026-02-07 10:09:10,609 - INFO - [cleanup] Removing orphan directory: uploads\f5980b46-71de-4f3e-a0e7-7c6cdde754d6
+2026-02-07 10:09:20,231 - INFO - [layout] Detected 11 regions
+2026-02-07 10:09:20,231 - INFO - [OCR] Layout detection: 0.62s, 11 regions
+2026-02-07 10:09:26,428 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 10:09:28,084 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 10:09:29,861 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 10:09:31,932 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 10:09:33,758 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 10:09:34,884 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 3f55e076-aab4-41df-b088-64afc5cb631e, 71 page(s)
+2026-02-07 10:09:34,887 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 10:09:35,285 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 10:09:35,455 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 10:09:35,567 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 10:09:35,723 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 10:09:35,872 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 10:09:35,872 - INFO - [OCR] TOTAL: 16.32s (11 regions)
+2026-02-07 10:12:33,647 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 10:12:33,705 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 10:12:35,948 - INFO - [layout] Model loaded on CUDA: 2.24s
+2026-02-07 10:12:35,950 - INFO - [cleanup] Removing orphan directory: uploads\3f55e076-aab4-41df-b088-64afc5cb631e
+2026-02-07 10:12:46,337 - INFO - [layout] Detected 11 regions
+2026-02-07 10:12:46,337 - INFO - [OCR] Layout detection: 0.51s, 11 regions
+2026-02-07 10:12:48,328 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 10:12:50,290 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 10:12:52,275 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 10:12:54,518 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 10:12:56,584 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 10:12:58,828 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 10:13:01,409 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 10:13:02,981 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 6860a835-e14d-4754-81cf-6ca90c85c77a, 71 page(s)
+2026-02-07 10:13:02,982 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 10:13:03,159 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 10:13:03,362 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 10:13:03,529 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 10:13:03,530 - INFO - [OCR] TOTAL: 17.73s (11 regions)

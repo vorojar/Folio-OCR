@@ -19,11 +19,19 @@ import json
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import re
+from html.parser import HTMLParser
+from urllib.parse import quote
 import fitz  # PyMuPDF for PDF processing
 from PIL import Image
 import io
 import torch
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
+from pydantic import BaseModel
+from docx import Document as DocxDocument
+from docx.shared import Pt, RGBColor
+from docx.oxml.ns import qn
+from docx.enum.section import WD_SECTION_START
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # Setup logging
 LOG_FILE = Path(__file__).parent / "server.log"
@@ -654,6 +662,241 @@ async def delete_document(doc_id: str):
     del documents[doc_id]
     logger.info(f"[delete] Document {doc_id} removed")
     return {"success": True}
+
+
+# --- DOCX Export ---
+
+class _ExportPage(BaseModel):
+    num: int
+    text: str
+
+class _ExportRequest(BaseModel):
+    pages: list[_ExportPage]
+
+
+class _TableParser(HTMLParser):
+    """Extract rows/cells from an HTML <table>."""
+    def __init__(self):
+        super().__init__()
+        self.rows: list[list[str]] = []
+        self._in_cell = False
+        self._cell_text = ""
+        self._current_row: list[str] = []
+        self._is_header_row = False
+        self.header_row_indices: set[int] = set()
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag == "tr":
+            self._current_row = []
+            self._is_header_row = False
+        elif tag in ("td", "th"):
+            self._in_cell = True
+            self._cell_text = ""
+            if tag == "th":
+                self._is_header_row = True
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ("td", "th"):
+            self._in_cell = False
+            self._current_row.append(self._cell_text.strip())
+        elif tag == "tr":
+            if self._current_row:
+                if self._is_header_row:
+                    self.header_row_indices.add(len(self.rows))
+                self.rows.append(self._current_row)
+
+    def handle_data(self, data):
+        if self._in_cell:
+            self._cell_text += data
+
+
+def _parse_md_table(lines: list[str]) -> list[list[str]]:
+    """Parse markdown table lines into rows of cells."""
+    rows = []
+    for line in lines:
+        stripped = line.strip()
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        # Skip separator row (---, :--:, etc.)
+        if all(re.match(r'^[-:]+$', c) for c in cells if c):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def _parse_ocr_text(text: str) -> list[dict]:
+    """Parse OCR text into structured elements: headings, paragraphs, tables.
+    Returns list of {type: 'heading'|'paragraph'|'table', ...}
+    """
+    elements = []
+
+    # Split by HTML tables first
+    parts = re.split(r'(<table[\s\S]*?</table>)', text, flags=re.IGNORECASE)
+
+    for part in parts:
+        if re.match(r'^<table[\s\S]*</table>$', part, re.IGNORECASE):
+            # HTML table
+            parser = _TableParser()
+            parser.feed(part)
+            if parser.rows:
+                elements.append({
+                    "type": "table",
+                    "rows": parser.rows,
+                    "header_rows": parser.header_row_indices,
+                })
+            continue
+
+        # Process non-table text line by line
+        lines = part.split('\n')
+        md_table_buf = []
+
+        def flush_md_table():
+            if not md_table_buf:
+                return
+            rows = _parse_md_table(md_table_buf)
+            if rows:
+                elements.append({
+                    "type": "table",
+                    "rows": rows,
+                    "header_rows": {0},  # first row is header in md tables
+                })
+            md_table_buf.clear()
+
+        for line in lines:
+            trimmed = line.strip()
+
+            # Detect markdown table rows
+            if '|' in trimmed and (trimmed.startswith('|') or re.search(r'\w\s*\|', trimmed)):
+                md_table_buf.append(trimmed)
+                continue
+
+            if md_table_buf:
+                flush_md_table()
+
+            # Headings
+            if trimmed.startswith('### '):
+                elements.append({"type": "heading", "level": 3, "text": trimmed[4:]})
+            elif trimmed.startswith('## '):
+                elements.append({"type": "heading", "level": 2, "text": trimmed[3:]})
+            elif trimmed.startswith('# '):
+                elements.append({"type": "heading", "level": 1, "text": trimmed[2:]})
+            elif trimmed:
+                elements.append({"type": "paragraph", "text": trimmed})
+            # Skip blank lines (they're just spacing)
+
+        flush_md_table()
+
+    return elements
+
+
+def _build_docx(title: str, pages: list[_ExportPage]) -> io.BytesIO:
+    """Build a real DOCX file from parsed OCR text."""
+    doc = DocxDocument()
+
+    # Set default font
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Calibri'
+    font.size = Pt(11)
+    # Set East Asian font (微软雅黑) for Chinese text
+    rpr = style.element.get_or_add_rPr()
+    ea_font = rpr.makeelement(qn('w:rFonts'), {qn('w:eastAsia'): '微软雅黑'})
+    rpr.append(ea_font)
+
+    multi_page = len(pages) > 1
+
+    if multi_page:
+        doc.add_heading(title, level=0)
+
+    for idx, page in enumerate(pages):
+        # Section break for each page after the first (each OCR page = one Word section)
+        if multi_page and idx > 0:
+            doc.add_section(WD_SECTION_START.NEW_PAGE)
+
+        elements = _parse_ocr_text(page.text or '')
+
+        for elem in elements:
+            if elem["type"] == "heading":
+                doc.add_heading(elem["text"], level=elem["level"])
+
+            elif elem["type"] == "paragraph":
+                para = doc.add_paragraph()
+                text = elem["text"]
+                # Simple bold/italic parsing
+                parts = re.split(r'(\*\*.*?\*\*|\*.*?\*)', text)
+                for p in parts:
+                    if p.startswith('**') and p.endswith('**'):
+                        run = para.add_run(p[2:-2])
+                        run.bold = True
+                    elif p.startswith('*') and p.endswith('*') and len(p) > 2:
+                        run = para.add_run(p[1:-1])
+                        run.italic = True
+                    else:
+                        para.add_run(p)
+
+            elif elem["type"] == "table":
+                rows = elem["rows"]
+                if not rows:
+                    continue
+                n_cols = max(len(r) for r in rows)
+                tbl = doc.add_table(rows=len(rows), cols=n_cols)
+                tbl.style = 'Table Grid'
+
+                header_rows = elem.get("header_rows", set())
+
+                for i, row_data in enumerate(rows):
+                    row = tbl.rows[i]
+                    for j, cell_text in enumerate(row_data):
+                        if j < n_cols:
+                            cell = row.cells[j]
+                            cell.text = cell_text
+                            # Bold header cells
+                            if i in header_rows:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.bold = True
+
+    # Add page number footers (one per section = one per OCR page)
+    if multi_page:
+        for idx, section in enumerate(doc.sections):
+            footer = section.footer
+            footer.is_linked_to_previous = False
+            para = footer.paragraphs[0]
+            para.text = f"— {pages[idx].num} —"
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for run in para.runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+@app.post("/api/export/{doc_id}")
+async def export_docx(doc_id: str, req: _ExportRequest):
+    """Export document as a real DOCX file."""
+    if doc_id not in documents:
+        raise HTTPException(404, "Document not found")
+
+    doc_meta = documents[doc_id]
+    title = doc_meta.get("filename", "Document").replace(".pdf", "")
+
+    buf = _build_docx(title, req.pages)
+
+    # RFC 5987 encoding for non-ASCII filenames
+    safe_name = f"{title}.docx"
+    encoded_name = quote(safe_name)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
+        },
+    )
 
 
 if __name__ == "__main__":

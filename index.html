@@ -1452,7 +1452,7 @@
 
         document.addEventListener('click', () => exportMenu.classList.remove('show'));
 
-        exportMenu.addEventListener('click', (e) => {
+        exportMenu.addEventListener('click', async (e) => {
             const item = e.target.closest('.export-item');
             if (!item) return;
             e.stopPropagation();
@@ -1461,6 +1461,31 @@
             saveCurrentEditor();
             const fmt = item.dataset.fmt;
             const baseName = (state.activeDocFilename || 'document').replace(/\.[^.]+$/, '');
+
+            if (fmt === 'docx') {
+                // Server-side DOCX generation
+                const pages = state.pages.map(p => ({ num: p.num, text: p.ocr_text || '' }));
+                if (pages.every(p => !p.text)) return;
+                try {
+                    const res = await fetch(`/api/export/${state.activeDocId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pages }),
+                    });
+                    if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`);
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = baseName + '.docx';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error('DOCX export failed:', err);
+                    alert('DOCX export failed: ' + err.message);
+                }
+                return;
+            }
 
             let blob, ext;
 
@@ -1474,12 +1499,9 @@
                 if (!txt) return;
                 blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
                 ext = '.txt';
-            } else if (fmt === 'docx') {
-                blob = buildDocxBlob();
-                if (!blob) return;
-                ext = '.docx';
             }
 
+            if (!blob) return;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1499,37 +1521,6 @@
                 const text = p.ocr_text || '(not recognized)';
                 return `--- Page ${p.num} ---\n\n${text}`;
             }).join('\n\n\n');
-        }
-
-        // --- Build DOCX (Word-compatible HTML) ---
-        function buildDocxBlob() {
-            const pagesWithText = state.pages.filter(p => p.ocr_text);
-            if (pagesWithText.length === 0) return null;
-
-            const title = state.activeDocFilename || 'Document';
-
-            function esc(s) {
-                return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            }
-
-            function textToHtml(text) {
-                return text.split('\n').map(line => `<p>${esc(line) || '&nbsp;'}</p>`).join('');
-            }
-
-            let body = '';
-            if (state.pages.length === 1) {
-                body = textToHtml(state.pages[0].ocr_text || '');
-            } else {
-                body = `<h1>${esc(title)}</h1>`;
-                for (const p of state.pages) {
-                    body += `<h2>Page ${p.num}</h2>`;
-                    body += textToHtml(p.ocr_text || '(not recognized)');
-                }
-            }
-
-            const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.6}h1{font-size:18pt;margin-bottom:12pt}h2{font-size:14pt;margin-top:18pt;margin-bottom:8pt;color:#555}p{margin:0 0 4pt 0}</style></head><body>${body}</body></html>`;
-
-            return new Blob(['\ufeff' + html], { type: 'application/msword' });
         }
 
         // --- Format time remaining ---
