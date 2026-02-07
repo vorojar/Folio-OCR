@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Folio-OCR is a FastAPI-based OCR workbench powered by [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) via Ollama. It provides a three-column web UI and REST API for text recognition from images and PDFs.
+Folio-OCR is a three-column document OCR workbench powered by [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) via Ollama. Single-file FastAPI backend + single-file frontend, designed for daily batch OCR of books and documents.
 
 ## Commands
 
@@ -29,34 +29,40 @@ start.bat
 
 ## Architecture
 
-**Single-file backend** (`server.py`):
-- FastAPI app with CORS enabled
-- OCR inference via Ollama HTTP API (`/api/chat` with base64 images)
-- Auto-starts Ollama if not running when "Load Model" is clicked
-- PDF processing via PyMuPDF: converts pages to PNG at 2x resolution before OCR
-- In-memory document state (`documents` dict) tracks uploaded files and OCR results
-- Uploads stored in `uploads/{doc_id}/` subdirectories, cleaned on startup and deletion
-- Path traversal protection via `_safe_doc_path()` helper
+**Backend** (`server.py`):
+- FastAPI app with CORS, version 3.1.0
+- OCR via Ollama `/api/chat` (base64 images), model `glm-ocr` on `localhost:11434`
+- Chinese OCR prompt: 识别正文 + 跳过页眉页脚 + 表格输出为 Markdown/HTML
+- Auto-strips ```` ```markdown ``` ```` fences from model output
+- PDF → PNG via PyMuPDF at 2x resolution
+- Upload returns SSE stream (`init` → `page` × N → `done`) for progressive page loading
+- In-memory document state, uploads in `uploads/{doc_id}/`, orphan cleanup on startup
+- Path traversal protection via `_safe_doc_path()`
+- Auto-starts Ollama if not running
 
-**Single-file frontend** (`index.html`):
-- Three-column document workbench layout (page list | image preview | OCR result)
-- Left panel: page thumbnails with OCR status indicators
-- Center panel: full image preview (upload zone when no document loaded)
-- Right panel: OCR text output with per-page and all-page copy
-- Auto-triggers OCR when selecting a page; caches results client-side
+**Frontend** (`index.html`):
+- Warm cream/charcoal theme (CSS variables: `--cream`, `--charcoal`, `--accent`)
+- Three-column layout: page list (200px) | image preview (flex) | OCR result (380px)
+- Multi-file upload (click/drag, images + PDFs mixed), SSE stream parsing via ReadableStream
+- Auto-OCR on page select, result caching in state
+- Editable OCR results (`<textarea>`) with Edit/Preview toggle (renders HTML tables)
+- Batch "OCR All Pages" with Stop button, progress bar + ETA display
+- Export: .md / .txt / .docx (Word-compatible HTML, zero dependencies)
+- Copy per-page or all pages
 
 **API Endpoints**:
-- `GET /api/status` - Service status and Ollama connectivity
-- `POST /api/load-model` - Start Ollama if needed, pre-warm model into GPU
-- `POST /api/upload` - Upload one or more files (multi-select images supported), SSE stream page list
-- `GET /api/images/{doc_id}/{filename}` - Serve uploaded page images
-- `POST /api/ocr/{doc_id}/{page_num}` - Run OCR on a single page (returns cached if available)
-- `POST /api/ocr/{doc_id}/all` - Run OCR on all pages sequentially
-- `DELETE /api/documents/{doc_id}` - Delete document and its images
+- `GET /api/status` — Service status and Ollama connectivity
+- `POST /api/load-model` — Start Ollama if needed, pre-warm model into GPU
+- `POST /api/upload` — Upload files (multi-select), returns SSE page stream
+- `GET /api/images/{doc_id}/{filename}` — Serve page images
+- `POST /api/ocr/{doc_id}/{page_num}` — OCR single page (cached if available)
+- `POST /api/ocr/{doc_id}/all` — OCR all pages sequentially
+- `DELETE /api/documents/{doc_id}` — Delete document and images
 
-## Key Implementation Details
+## Key Details
 
-- Ollama model: `glm-ocr` on `localhost:11434`
-- OCR prompt is hardcoded as `"Text Recognition:"`
-- PDF pages rendered at 2x scale matrix for better OCR quality
-- First request after model load takes ~50s (cold start), subsequent ~0.5s
+- PDF pages rendered at 2x scale matrix for OCR quality
+- First request after model load ~50s (cold start), subsequent ~0.5s
+- GLM-OCR outputs HTML tables for tabular content; Preview mode renders them natively
+- DOCX export uses Word-compatible HTML with UTF-8 BOM, no external library needed
+- All state is in-memory; restarting the server clears documents

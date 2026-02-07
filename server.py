@@ -20,6 +20,8 @@ from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import re
 import fitz  # PyMuPDF for PDF processing
+from PIL import Image
+import io
 
 # Setup logging
 LOG_FILE = Path(__file__).parent / "server.log"
@@ -53,11 +55,17 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Ollama config
 OLLAMA_BASE = "http://localhost:11434"
 OLLAMA_MODEL = "glm-ocr"
-OCR_PROMPT = (
-    "识别图片中的正文内容，输出Markdown格式。"
-    "跳过页眉、页脚和页码。"
-    "如果有表格，输出为Markdown表格。"
-)
+OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。跳过页眉页脚和页码。"
+
+# LaTeX → Unicode mapping (loaded once at import time)
+_LATEX_MAP_FILE = Path(__file__).parent / "latex_unicode.json"
+with open(_LATEX_MAP_FILE, "r", encoding="utf-8") as _f:
+    _LATEX_DATA = json.load(_f)
+_LATEX_SIMPLE: list[tuple[str, str]] = sorted(
+    _LATEX_DATA["simple"].items(), key=lambda x: -len(x[0])
+)  # longest match first
+_LATEX_FRACTIONS: dict[str, str] = _LATEX_DATA.get("fractions", {})
+_CIRCLED = {str(i): chr(0x2460 + i - 1) for i in range(1, 21)}  # ①-⑳
 
 # In-memory document state
 # doc_id -> {filename, pages: [{num, filename, ocr_text, ocr_time}], created_at}
@@ -98,16 +106,65 @@ async def check_ollama() -> dict:
         return {"online": False, "model_loaded": False, "models": []}
 
 
+# Max image height before splitting (pixels). GLM-OCR vision encoder fails on very tall images.
+MAX_IMAGE_HEIGHT = 1600
+SEGMENT_OVERLAP = 80  # overlap between segments to avoid cutting mid-line
+
+
 async def ocr_image(image_path: str) -> str:
-    """Run OCR on an image via Ollama API"""
+    """Run OCR on an image via Ollama API. Auto-splits tall images."""
     t0 = time.time()
 
-    with open(image_path, "rb") as f:
-        image_b64 = base64.b64encode(f.read()).decode("utf-8")
+    img = Image.open(image_path)
+    w, h = img.size
 
-    logger.info(f"[OCR] image encoded: {time.time() - t0:.2f}s")
+    if h > MAX_IMAGE_HEIGHT:
+        logger.info(f"[OCR] Image {w}x{h} exceeds max height, splitting into segments")
+        segments = _split_image(img)
+        logger.info(f"[OCR] Split into {len(segments)} segments")
+    else:
+        segments = [img]
 
-    t1 = time.time()
+    all_text = []
+    for i, seg in enumerate(segments):
+        seg_b64 = _image_to_b64(seg)
+        text = await _ocr_single(seg_b64)
+        text = _postprocess(text)
+        if text:
+            all_text.append(text)
+        logger.info(f"[OCR] Segment {i+1}/{len(segments)} done")
+
+    img.close()
+    output = "\n\n".join(all_text)
+    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(segments)} segment(s))")
+    return output
+
+
+def _split_image(img: Image.Image) -> list[Image.Image]:
+    """Split a tall image into overlapping segments."""
+    w, h = img.size
+    step = MAX_IMAGE_HEIGHT - SEGMENT_OVERLAP
+    segments = []
+    y = 0
+    while y < h:
+        bottom = min(y + MAX_IMAGE_HEIGHT, h)
+        seg = img.crop((0, y, w, bottom))
+        segments.append(seg)
+        y += step
+        if bottom == h:
+            break
+    return segments
+
+
+def _image_to_b64(img: Image.Image) -> str:
+    """Convert PIL Image to base64 PNG string."""
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+async def _ocr_single(image_b64: str) -> str:
+    """Send a single image to Ollama for OCR."""
     resp = await _http_client.post(
         f"{OLLAMA_BASE}/api/chat",
         json={
@@ -124,16 +181,45 @@ async def ocr_image(image_path: str) -> str:
     )
     resp.raise_for_status()
     result = resp.json()
+    return result.get("message", {}).get("content", "")
 
-    output_text = result.get("message", {}).get("content", "")
-    tokens = result.get("eval_count", 0)
-    logger.info(f"[OCR] ollama generate: {time.time() - t1:.2f}s, tokens: {tokens}")
-    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s")
 
-    # GLM-OCR wraps output in ```markdown ... ``` fences — strip them
-    output_text = re.sub(r'^```\w*\n?', '', output_text.strip())
-    output_text = re.sub(r'\n?```$', '', output_text.strip())
-    return output_text.strip()
+def _postprocess(text: str) -> str:
+    """Strip markdown fences and convert LaTeX to Unicode."""
+    text = re.sub(r'^```\w*\n?', '', text.strip())
+    text = re.sub(r'\n?```$', '', text.strip())
+    text = _latex_to_unicode(text)
+    return text.strip()
+
+
+def _latex_to_unicode(text: str) -> str:
+    """Replace LaTeX notation with Unicode characters using latex_unicode.json"""
+
+    # 1. \textcircled{N} → ①②③...
+    text = re.sub(
+        r'\$\\textcircled\{(\d+)\}\$',
+        lambda m: _CIRCLED.get(m.group(1), m.group(0)),
+        text,
+    )
+
+    # 2. \frac{a}{b} → Unicode fraction (½ etc.) or a/b
+    def _replace_frac(m):
+        num, den = m.group(1), m.group(2)
+        key = f"{num}/{den}"
+        return _LATEX_FRACTIONS.get(key, f"{num}/{den}")
+
+    text = re.sub(r'\$\\frac\{([^}]+)\}\{([^}]+)\}\$', _replace_frac, text)
+
+    # 3. Simple $\command$ → Unicode (longest match first)
+    for latex_cmd, unicode_char in _LATEX_SIMPLE:
+        token = f"${latex_cmd}$"
+        if token in text:
+            text = text.replace(token, unicode_char)
+
+    # 4. Remaining bare $\command$ patterns not in map — unwrap the $ delimiters
+    text = re.sub(r'\$\\([a-zA-Z]+)\$', lambda m: '\\' + m.group(1), text)
+
+    return text
 
 
 def pdf_to_images(pdf_path: str, output_dir: Path) -> list[str]:

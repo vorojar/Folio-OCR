@@ -297,12 +297,18 @@
         .panel-right.hidden { display: none; }
 
         .result-header {
-            padding: 10px 14px;
+            padding: 8px 14px;
             border-bottom: 1px solid var(--cream-dark);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .result-header-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            flex-shrink: 0;
         }
 
         .result-header-title {
@@ -591,14 +597,21 @@
         <!-- Right: OCR Result -->
         <div class="panel-right hidden" id="panelRight">
             <div class="result-header">
-                <span class="result-header-title">OCR Result</span>
-                <div class="view-toggle" id="viewToggle" style="display:none;">
-                    <button class="view-btn active" data-mode="edit">Edit</button>
-                    <button class="view-btn" data-mode="preview">Preview</button>
+                <div class="result-header-row">
+                    <span class="result-header-title">OCR Result</span>
+                    <span class="result-header-spacer"></span>
+                    <span class="result-time" id="resultTime" style="display:none;"></span>
                 </div>
-                <span class="result-header-spacer"></span>
-                <span class="result-time" id="resultTime" style="display:none;"></span>
-                <button class="copy-btn" id="copyPageBtn">Copy</button>
+                <div class="result-header-row" id="resultToolbar" style="display:none;">
+                    <div class="view-toggle" id="viewToggle">
+                        <button class="view-btn active" data-mode="edit">Edit</button>
+                        <button class="view-btn" data-mode="preview">Preview</button>
+                    </div>
+                    <span class="result-header-spacer"></span>
+                    <button class="copy-btn" id="reflowBtn" title="Merge broken lines into paragraphs">Reflow</button>
+                    <button class="copy-btn" id="reflowAllBtn" title="Reflow all pages">Reflow All</button>
+                    <button class="copy-btn" id="copyPageBtn">Copy</button>
+                </div>
             </div>
             <div class="result-body" id="resultBody">
                 <div class="result-placeholder">Select a page to view OCR result</div>
@@ -645,7 +658,10 @@
         const panelRight       = $('panelRight');
         const resultBody       = $('resultBody');
         const resultTime       = $('resultTime');
+        const resultToolbar    = $('resultToolbar');
         const viewToggle       = $('viewToggle');
+        const reflowBtn        = $('reflowBtn');
+        const reflowAllBtn     = $('reflowAllBtn');
         const copyPageBtn      = $('copyPageBtn');
         const fileInput        = $('fileInput');
 
@@ -728,26 +744,48 @@
         });
 
         async function uploadFiles(fileList) {
+            // Build FormData FIRST (before any await) — fileList may be a live
+            // FileList reference that gets cleared when fileInput.value is reset
+            const formData = new FormData();
+            const label = fileList.length === 1 ? fileList[0].name : `${fileList.length} files`;
+            for (const f of fileList) formData.append('files', f);
+
+            // Stop any running OCR
+            if (state.ocrRunning) {
+                state.ocrAbort = true;
+                state.ocrRunning = false;
+                ocrAllBtn.textContent = 'OCR All Pages';
+                ocrAllBtn.classList.remove('danger');
+                ocrProgress.style.display = 'none';
+            }
+
             if (state.activeDocId) {
                 try { await fetch(`/api/documents/${state.activeDocId}`, { method: 'DELETE' }); } catch(e) {}
             }
 
-            const label = fileList.length === 1 ? fileList[0].name : `${fileList.length} files`;
             topFilename.textContent = `Uploading ${label}...`;
             state.activeDocId = null;
             state.activeDocFilename = null;
             state.pages = [];
             state.activePageNum = null;
-            pageList.innerHTML = '';
 
-            const formData = new FormData();
-            for (const f of fileList) formData.append('files', f);
+            // Reset all panels to clean state
+            pageList.innerHTML = '';
+            previewContainer.classList.remove('show');
+            previewImage.src = '';
+            resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
+            resultTime.style.display = 'none';
+            resultToolbar.style.display = 'none';
 
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || 'Upload failed');
+                    let msg = 'Upload failed';
+                    try {
+                        const err = await res.json();
+                        msg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+                    } catch(_) { msg = `HTTP ${res.status}`; }
+                    throw new Error(msg);
                 }
                 await handleUploadStream(res);
             } catch (e) {
@@ -922,7 +960,7 @@
             preview.innerHTML = renderPreview(text || '');
             resultBody.appendChild(preview);
 
-            viewToggle.style.display = '';
+            resultToolbar.style.display = '';
             updateViewToggleButtons();
 
             if (time !== null && time !== undefined) {
@@ -1047,6 +1085,107 @@
                 btn.classList.toggle('active', btn.dataset.mode === state.viewMode);
             });
         }
+
+        // --- Paragraph reflow ---
+        // Terminal punctuation: line ends here intentionally
+        const TERMINAL_RE = /[。！？；…」』）】》!?\]);:：]$/;
+        // Lines that should never be merged with the previous line
+        const BLOCK_START_RE = /^(#{1,3}\s|[-*+]\s|\d+[.、]\s*|[|｜<]|\s*$)/;
+        // Lines that should never be merged with the next line
+        const BLOCK_END_RE = /^(#{1,3}\s|[-*+]\s|\d+[.、]\s*|[|｜])/;
+
+        function reflowText(text) {
+            if (!text) return text;
+
+            const lines = text.split('\n');
+            const result = [];
+            let i = 0;
+
+            while (i < lines.length) {
+                const line = lines[i];
+                const trimmed = line.trim();
+
+                // Blank line → preserve as paragraph separator
+                if (trimmed === '') {
+                    result.push('');
+                    i++;
+                    continue;
+                }
+
+                // Block-level element (heading, list, table, HTML) → keep as-is
+                if (BLOCK_START_RE.test(trimmed)) {
+                    result.push(line);
+                    i++;
+                    continue;
+                }
+
+                // Start accumulating a paragraph
+                let para = trimmed;
+                i++;
+
+                while (i < lines.length) {
+                    const next = lines[i].trim();
+
+                    // Stop merging if: blank line, block element, or previous line had terminal punctuation
+                    if (next === '' || BLOCK_START_RE.test(next) || TERMINAL_RE.test(para)) {
+                        break;
+                    }
+
+                    // Decide joiner: space for Latin chars at boundary, nothing for CJK
+                    const lastChar = para.slice(-1);
+                    const firstChar = next.charAt(0);
+                    const cjk = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/;
+                    const joiner = (cjk.test(lastChar) || cjk.test(firstChar)) ? '' : ' ';
+
+                    para += joiner + next;
+                    i++;
+                }
+
+                result.push(para);
+            }
+
+            return result.join('\n');
+        }
+
+        reflowBtn.addEventListener('click', () => {
+            saveCurrentEditor();
+            const page = state.pages.find(p => p.num === state.activePageNum);
+            if (!page || !page.ocr_text) return;
+
+            page.ocr_text = reflowText(page.ocr_text);
+
+            // Update editor/preview
+            const ta = resultBody.querySelector('.result-editor');
+            if (ta) ta.value = page.ocr_text;
+            const preview = resultBody.querySelector('.result-preview');
+            if (preview) preview.innerHTML = renderPreview(page.ocr_text);
+
+            reflowBtn.textContent = 'Done!';
+            setTimeout(() => reflowBtn.textContent = 'Reflow', 1200);
+        });
+
+        reflowAllBtn.addEventListener('click', () => {
+            saveCurrentEditor();
+            let count = 0;
+            for (const page of state.pages) {
+                if (page.ocr_text) {
+                    page.ocr_text = reflowText(page.ocr_text);
+                    count++;
+                }
+            }
+
+            // Refresh current view
+            const page = state.pages.find(p => p.num === state.activePageNum);
+            if (page && page.ocr_text) {
+                const ta = resultBody.querySelector('.result-editor');
+                if (ta) ta.value = page.ocr_text;
+                const preview = resultBody.querySelector('.result-preview');
+                if (preview) preview.innerHTML = renderPreview(page.ocr_text);
+            }
+
+            reflowAllBtn.textContent = `${count} pages`;
+            setTimeout(() => reflowAllBtn.textContent = 'Reflow All', 1500);
+        });
 
         // --- Copy current page ---
         copyPageBtn.addEventListener('click', () => {

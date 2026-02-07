@@ -913,3 +913,224 @@ ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有�
 2026-02-06 22:34:06,497 - INFO - [cleanup] Removing orphan directory: uploads\6acf16a1-d018-4637-b0fa-bffcb7b4df26
 2026-02-06 22:34:06,498 - INFO - [cleanup] Removing orphan directory: uploads\6cb27741-87b5-4280-b800-09a5735cf51a
 2026-02-06 22:34:06,500 - INFO - [cleanup] Removing orphan directory: uploads\89d58257-793d-433e-9e6d-a754f6315cba
+2026-02-06 22:34:14,053 - INFO - [upload] 表格.png -> 1ab9cd2a-56a0-4f0a-b9c8-5e33303b2cf5, 1 page(s)
+2026-02-06 22:34:14,064 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:34:14,945 - INFO - [OCR] ollama generate: 0.88s, tokens: 224
+2026-02-06 22:34:14,946 - INFO - [OCR] TOTAL: 0.89s
+2026-02-06 22:39:33,679 - INFO - [upload] 表格.png -> 4f8bc95e-70de-4729-8d8c-c2cc9cae1a4b, 1 page(s)
+2026-02-06 22:39:33,689 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:39:36,536 - INFO - [OCR] ollama generate: 2.85s, tokens: 224
+2026-02-06 22:39:36,536 - INFO - [OCR] TOTAL: 2.85s
+2026-02-06 22:39:56,817 - INFO - [delete] Document 4f8bc95e-70de-4729-8d8c-c2cc9cae1a4b removed
+2026-02-06 22:40:06,884 - INFO - [OCR] image encoded: 0.02s
+2026-02-06 22:40:07,441 - INFO - [upload] 干嘉伟：科学运营.pdf -> 4a32dff3-490d-4586-b044-081baf879f37, 16 page(s)
+2026-02-06 22:40:09,200 - INFO - [OCR] ollama generate: 2.31s, tokens: 286
+2026-02-06 22:40:09,200 - INFO - [OCR] TOTAL: 2.33s
+2026-02-06 22:40:12,023 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:40:14,133 - INFO - [OCR] ollama generate: 2.11s, tokens: 281
+2026-02-06 22:40:14,133 - INFO - [OCR] TOTAL: 2.11s
+2026-02-06 22:40:14,799 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:40:16,478 - INFO - [OCR] ollama generate: 1.68s, tokens: 254
+2026-02-06 22:40:16,478 - INFO - [OCR] TOTAL: 1.68s
+2026-02-06 22:40:19,762 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:40:20,766 - INFO - [OCR] ollama generate: 1.00s, tokens: 13
+2026-02-06 22:40:20,767 - INFO - [OCR] TOTAL: 1.00s
+2026-02-06 22:40:21,643 - INFO - [OCR] image encoded: 0.00s
+2026-02-06 22:40:23,516 - INFO - [OCR] ollama generate: 1.87s, tokens: 304
+2026-02-06 22:40:23,516 - INFO - [OCR] TOTAL: 1.87s
+2026-02-06 22:40:37,027 - INFO - [delete] Document 4a32dff3-490d-4586-b044-081baf879f37 removed
+2026-02-06 22:40:43,084 - INFO - [upload] 表格.png -> 7219c588-6a20-4546-b42a-f9b8e9643f7e, 1 page(s)
+2026-02-06 22:40:43,095 - INFO - [OCR] image encoded: 0.01s
+2026-02-06 22:40:44,185 - INFO - [OCR] ollama generate: 1.09s, tokens: 224
+2026-02-06 22:40:44,185 - INFO - [OCR] TOTAL: 1.10s
+2026-02-07 08:03:03,716 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:03:04,078 - INFO - [cleanup] Removing orphan directory: uploads\1ab9cd2a-56a0-4f0a-b9c8-5e33303b2cf5
+2026-02-07 08:03:04,078 - INFO - [cleanup] Removing orphan directory: uploads\7219c588-6a20-4546-b42a-f9b8e9643f7e
+2026-02-07 08:03:12,270 - INFO - [upload] 表格.png -> 9b7ff2b3-611e-4eaf-a963-6690876b5d93, 1 page(s)
+2026-02-07 08:03:12,278 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:03:18,558 - INFO - [OCR] ollama generate: 6.28s, tokens: 224
+2026-02-07 08:03:18,558 - INFO - [OCR] TOTAL: 6.28s
+2026-02-07 08:06:00,820 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:06:00,903 - INFO - [cleanup] Removing orphan directory: uploads\9b7ff2b3-611e-4eaf-a963-6690876b5d93
+2026-02-07 08:06:07,664 - INFO - [upload] 表格.png -> 645e69d2-5bda-4e14-9421-c227a594918a, 1 page(s)
+2026-02-07 08:06:07,673 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:06:08,925 - INFO - [OCR] ollama generate: 1.25s, tokens: 224
+2026-02-07 08:06:08,926 - INFO - [OCR] TOTAL: 1.26s
+2026-02-07 08:06:21,649 - INFO - [OCR] image encoded: 0.02s
+2026-02-07 08:06:21,896 - INFO - [upload] 吴总知学云（管理层）内容梳理.pdf -> 9ee31dff-aec9-462b-a44b-02e40909d7f8, 11 page(s)
+2026-02-07 08:06:24,603 - INFO - [OCR] ollama generate: 2.95s, tokens: 539
+2026-02-07 08:06:24,603 - INFO - [OCR] TOTAL: 2.98s
+2026-02-07 08:06:28,206 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:06:31,498 - INFO - [OCR] ollama generate: 3.29s, tokens: 565
+2026-02-07 08:06:31,498 - INFO - [OCR] TOTAL: 3.29s
+2026-02-07 08:06:55,761 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:06:58,630 - INFO - [OCR] ollama generate: 2.87s, tokens: 494
+2026-02-07 08:06:58,630 - INFO - [OCR] TOTAL: 2.87s
+2026-02-07 08:11:49,254 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:11:49,330 - INFO - [cleanup] Removing orphan directory: uploads\645e69d2-5bda-4e14-9421-c227a594918a
+2026-02-07 08:11:49,330 - INFO - [cleanup] Removing orphan directory: uploads\9ee31dff-aec9-462b-a44b-02e40909d7f8
+2026-02-07 08:12:03,370 - INFO - [OCR] image encoded: 0.02s
+2026-02-07 08:12:03,646 - INFO - [upload] 吴总知学云（管理层）内容梳理.pdf -> b1f39cb2-749c-451c-927c-9e6940686bab, 11 page(s)
+2026-02-07 08:12:08,287 - INFO - [OCR] ollama generate: 4.92s, tokens: 539
+2026-02-07 08:12:08,287 - INFO - [OCR] TOTAL: 4.93s
+2026-02-07 08:12:14,431 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:12:15,873 - INFO - [OCR] ollama generate: 1.44s, tokens: 175
+2026-02-07 08:12:15,873 - INFO - [OCR] TOTAL: 1.44s
+2026-02-07 08:12:16,945 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:12:19,487 - INFO - [OCR] ollama generate: 2.54s, tokens: 488
+2026-02-07 08:12:19,487 - INFO - [OCR] TOTAL: 2.54s
+2026-02-07 08:12:23,837 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:12:26,689 - INFO - [OCR] ollama generate: 2.85s, tokens: 493
+2026-02-07 08:12:26,689 - INFO - [OCR] TOTAL: 2.85s
+2026-02-07 08:12:52,491 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:12:55,321 - INFO - [OCR] ollama generate: 2.83s, tokens: 494
+2026-02-07 08:12:55,321 - INFO - [OCR] TOTAL: 2.83s
+2026-02-07 08:12:59,858 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:13:02,216 - INFO - [OCR] ollama generate: 2.36s, tokens: 368
+2026-02-07 08:13:02,217 - INFO - [OCR] TOTAL: 2.36s
+2026-02-07 08:13:06,076 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:13:09,340 - INFO - [OCR] ollama generate: 3.26s, tokens: 611
+2026-02-07 08:13:09,340 - INFO - [OCR] TOTAL: 3.27s
+2026-02-07 08:13:18,104 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:13:20,922 - INFO - [OCR] ollama generate: 2.82s, tokens: 495
+2026-02-07 08:13:20,923 - INFO - [OCR] TOTAL: 2.82s
+2026-02-07 08:13:22,668 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:13:25,173 - INFO - [OCR] ollama generate: 2.50s, tokens: 426
+2026-02-07 08:13:25,173 - INFO - [OCR] TOTAL: 2.51s
+2026-02-07 08:15:32,750 - INFO - [delete] Document b1f39cb2-749c-451c-927c-9e6940686bab removed
+2026-02-07 08:15:48,813 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:15:54,732 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:15:58,196 - INFO - [OCR] ollama generate: 3.46s, tokens: 269
+2026-02-07 08:15:58,196 - INFO - [OCR] TOTAL: 3.48s
+2026-02-07 08:16:09,235 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 33bf174d-99c2-4aa5-9f34-c1514e3c9ff5, 71 page(s)
+2026-02-07 08:16:51,478 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:16:53,441 - INFO - [OCR] ollama generate: 1.96s, tokens: 256
+2026-02-07 08:16:53,441 - INFO - [OCR] TOTAL: 1.96s
+2026-02-07 08:16:55,448 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:16:57,410 - INFO - [OCR] ollama generate: 1.96s, tokens: 248
+2026-02-07 08:16:57,410 - INFO - [OCR] TOTAL: 1.96s
+2026-02-07 08:16:59,204 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:17:01,003 - INFO - [OCR] ollama generate: 1.80s, tokens: 221
+2026-02-07 08:17:01,003 - INFO - [OCR] TOTAL: 1.80s
+2026-02-07 08:17:06,249 - INFO - [OCR] image encoded: 0.00s
+2026-02-07 08:17:07,412 - INFO - [OCR] ollama generate: 1.16s, tokens: 93
+2026-02-07 08:17:07,412 - INFO - [OCR] TOTAL: 1.16s
+2026-02-07 08:17:11,751 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:17:14,609 - INFO - [OCR] ollama generate: 2.86s, tokens: 510
+2026-02-07 08:17:14,609 - INFO - [OCR] TOTAL: 2.87s
+2026-02-07 08:17:39,860 - INFO - [upload] 屏幕截图 2026-02-06 181559.png -> da3b75b1-e9bf-4cc8-98b9-c48cc0e87c0d, 1 page(s)
+2026-02-07 08:17:39,870 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:17:40,350 - INFO - [OCR] ollama generate: 0.48s, tokens: 6
+2026-02-07 08:17:40,350 - INFO - [OCR] TOTAL: 0.49s
+2026-02-07 08:17:44,517 - INFO - [delete] Document da3b75b1-e9bf-4cc8-98b9-c48cc0e87c0d removed
+2026-02-07 08:17:54,594 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:17:54,676 - INFO - [cleanup] Removing orphan directory: uploads\33bf174d-99c2-4aa5-9f34-c1514e3c9ff5
+2026-02-07 08:18:02,895 - INFO - [upload] markdown.pdf -> 52a7dcb1-dfe3-438e-a55c-034a51e9d420, 5 page(s)
+2026-02-07 08:18:02,909 - INFO - [OCR] image encoded: 0.01s
+2026-02-07 08:18:05,545 - INFO - [OCR] ollama generate: 2.63s, tokens: 407
+2026-02-07 08:18:05,545 - INFO - [OCR] TOTAL: 2.65s
+2026-02-07 08:18:30,002 - INFO - [delete] Document 52a7dcb1-dfe3-438e-a55c-034a51e9d420 removed
+2026-02-07 08:20:02,128 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:20:07,471 - INFO - [upload] markdown.pdf -> ba10ee7a-fcff-4893-97b1-bd90a46db6d1, 5 page(s)
+2026-02-07 08:20:07,493 - INFO - [OCR] image encoded: 0.02s
+2026-02-07 08:20:09,521 - INFO - [OCR] ollama generate: 2.03s, tokens: 407
+2026-02-07 08:20:09,521 - INFO - [OCR] TOTAL: 2.05s
+2026-02-07 08:20:16,408 - INFO - [delete] Document ba10ee7a-fcff-4893-97b1-bd90a46db6d1 removed
+2026-02-07 08:21:38,957 - INFO - [upload] markdown.pdf -> 86c519a1-1341-429f-aad2-f16a8b3c3729, 5 page(s)
+2026-02-07 08:21:38,975 - INFO - [OCR] image encoded: 0.02s
+2026-02-07 08:21:40,894 - INFO - [OCR] ollama generate: 1.92s, tokens: 407
+2026-02-07 08:21:40,894 - INFO - [OCR] TOTAL: 1.94s
+2026-02-07 08:21:46,563 - INFO - [delete] Document 86c519a1-1341-429f-aad2-f16a8b3c3729 removed
+2026-02-07 08:21:46,607 - INFO - [upload] markdown-20260101050843.png -> 4da94c37-4e71-4b26-8c57-8f319734fb2d, 1 page(s)
+2026-02-07 08:21:46,626 - INFO - [OCR] image encoded: 0.02s
+2026-02-07 08:22:02,278 - ERROR - [OCR] Ollama error: {"error":"an error was encountered while running the model: GGML_ASSERT(a-\u003ene[2] * 4 == b-\u003ene[0]) failed"}
+Traceback (most recent call last):
+  File "D:\mycode\glmocr\server.py", line 414, in ocr_single_page
+    text = await ocr_image(str(image_path))
+  File "D:\mycode\glmocr\server.py", line 131, in ocr_image
+    resp.raise_for_status()
+  File "C:\Users\voroj\AppData\Local\Programs\Python\Python310\lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+2026-02-07 08:25:03,644 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:25:03,723 - INFO - [cleanup] Removing orphan directory: uploads\4da94c37-4e71-4b26-8c57-8f319734fb2d
+2026-02-07 08:25:10,813 - INFO - [upload] markdown-20260101050843.png -> 6cd6eb7b-360e-4b99-8ec7-027cce59efd2, 1 page(s)
+2026-02-07 08:25:10,900 - INFO - [OCR] Image 1200x27699 exceeds max height, splitting into segments
+2026-02-07 08:25:10,999 - INFO - [OCR] Split into 19 segments
+2026-02-07 08:25:19,336 - INFO - [OCR] Segment 1/19 done
+2026-02-07 08:25:20,694 - INFO - [OCR] Segment 2/19 done
+2026-02-07 08:25:21,724 - INFO - [OCR] Segment 3/19 done
+2026-02-07 08:25:23,207 - INFO - [OCR] Segment 4/19 done
+2026-02-07 08:25:24,415 - INFO - [OCR] Segment 5/19 done
+2026-02-07 08:25:26,033 - INFO - [OCR] Segment 6/19 done
+2026-02-07 08:25:27,081 - INFO - [OCR] Segment 7/19 done
+2026-02-07 08:25:28,480 - INFO - [OCR] Segment 8/19 done
+2026-02-07 08:25:29,735 - INFO - [OCR] Segment 9/19 done
+2026-02-07 08:25:30,885 - INFO - [OCR] Segment 10/19 done
+2026-02-07 08:25:32,395 - INFO - [OCR] Segment 11/19 done
+2026-02-07 08:25:33,692 - INFO - [OCR] Segment 12/19 done
+2026-02-07 08:25:35,266 - INFO - [OCR] Segment 13/19 done
+2026-02-07 08:25:36,778 - INFO - [OCR] Segment 14/19 done
+2026-02-07 08:25:38,610 - INFO - [OCR] Segment 15/19 done
+2026-02-07 08:25:40,148 - INFO - [OCR] Segment 16/19 done
+2026-02-07 08:25:41,535 - INFO - [OCR] Segment 17/19 done
+2026-02-07 08:25:42,975 - INFO - [OCR] Segment 18/19 done
+2026-02-07 08:25:43,212 - INFO - [OCR] Segment 19/19 done
+2026-02-07 08:25:43,217 - INFO - [OCR] TOTAL: 32.40s (19 segment(s))
+2026-02-07 08:26:06,238 - INFO - [delete] Document 6cd6eb7b-360e-4b99-8ec7-027cce59efd2 removed
+2026-02-07 08:26:07,070 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:26:07,074 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:26:11,054 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:26:12,971 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:26:12,973 - INFO - [OCR] TOTAL: 5.92s (2 segment(s))
+2026-02-07 08:26:22,699 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 262fe0d2-8863-44cb-83c5-f11b29db1809, 71 page(s)
+2026-02-07 08:26:22,703 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:26:22,707 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:26:24,435 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:26:24,565 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:26:24,566 - INFO - [OCR] TOTAL: 1.86s (2 segment(s))
+2026-02-07 08:35:05,844 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 08:35:05,927 - INFO - [cleanup] Removing orphan directory: uploads\262fe0d2-8863-44cb-83c5-f11b29db1809
+2026-02-07 08:35:13,185 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:35:13,189 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:35:18,908 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:35:20,736 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:35:20,736 - INFO - [OCR] TOTAL: 7.58s (2 segment(s))
+2026-02-07 08:35:28,117 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 6ba9d8dd-70ad-4994-954d-87a1764d91d6, 71 page(s)
+2026-02-07 08:37:43,117 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:37:43,122 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:37:46,497 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:37:48,284 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:37:48,284 - INFO - [OCR] TOTAL: 5.18s (2 segment(s))
+2026-02-07 08:37:57,620 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 4ae84457-44d8-469c-8495-c217e9b0ddd1, 71 page(s)
+2026-02-07 08:54:37,507 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:54:37,513 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:54:41,210 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:54:41,353 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:54:41,354 - INFO - [OCR] TOTAL: 3.85s (2 segment(s))
+2026-02-07 08:54:42,712 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:54:42,719 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:54:44,400 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:54:44,513 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:54:44,514 - INFO - [OCR] TOTAL: 1.80s (2 segment(s))
+2026-02-07 08:54:49,194 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:54:49,203 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:54:51,119 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:54:51,242 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:54:51,243 - INFO - [OCR] TOTAL: 2.05s (2 segment(s))
+2026-02-07 08:54:54,197 - INFO - [OCR] Image 1191x1684 exceeds max height, splitting into segments
+2026-02-07 08:54:54,203 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:54:55,736 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:54:55,856 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:54:55,856 - INFO - [OCR] TOTAL: 1.66s (2 segment(s))
+2026-02-07 08:54:57,101 - INFO - [OCR] Image 1190x1678 exceeds max height, splitting into segments
+2026-02-07 08:54:57,114 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:54:59,806 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:55:00,059 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:55:00,060 - INFO - [OCR] TOTAL: 2.96s (2 segment(s))
+2026-02-07 08:55:32,492 - INFO - [OCR] Image 1190x1678 exceeds max height, splitting into segments
+2026-02-07 08:55:32,511 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:55:35,020 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:55:35,291 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:55:35,291 - INFO - [OCR] TOTAL: 2.80s (2 segment(s))

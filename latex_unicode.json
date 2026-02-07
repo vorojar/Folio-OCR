@@ -1,0 +1,77 @@
+{
+  "_comment": "LaTeX command → Unicode. Keys are bare commands (no $ delimiters). Applied via regex on $...$ wrapped tokens.",
+
+  "simple": {
+    "\\alpha": "α", "\\beta": "β", "\\gamma": "γ", "\\delta": "δ",
+    "\\epsilon": "ε", "\\varepsilon": "ε", "\\zeta": "ζ", "\\eta": "η",
+    "\\theta": "θ", "\\vartheta": "ϑ", "\\iota": "ι", "\\kappa": "κ",
+    "\\lambda": "λ", "\\mu": "μ", "\\nu": "ν", "\\xi": "ξ",
+    "\\pi": "π", "\\varpi": "ϖ", "\\rho": "ρ", "\\varrho": "ϱ",
+    "\\sigma": "σ", "\\varsigma": "ς", "\\tau": "τ", "\\upsilon": "υ",
+    "\\phi": "φ", "\\varphi": "φ", "\\chi": "χ", "\\psi": "ψ", "\\omega": "ω",
+
+    "\\Gamma": "Γ", "\\Delta": "Δ", "\\Theta": "Θ", "\\Lambda": "Λ",
+    "\\Xi": "Ξ", "\\Pi": "Π", "\\Sigma": "Σ", "\\Upsilon": "Υ",
+    "\\Phi": "Φ", "\\Psi": "Ψ", "\\Omega": "Ω",
+
+    "\\times": "×", "\\div": "÷", "\\pm": "±", "\\mp": "∓",
+    "\\cdot": "·", "\\circ": "∘", "\\bullet": "•",
+    "\\oplus": "⊕", "\\otimes": "⊗", "\\ominus": "⊖",
+    "\\star": "★", "\\ast": "∗", "\\dagger": "†", "\\ddagger": "‡",
+
+    "\\leq": "≤", "\\le": "≤", "\\geq": "≥", "\\ge": "≥",
+    "\\neq": "≠", "\\ne": "≠", "\\approx": "≈", "\\equiv": "≡",
+    "\\sim": "∼", "\\simeq": "≃", "\\cong": "≅", "\\propto": "∝",
+    "\\ll": "≪", "\\gg": "≫",
+    "\\subset": "⊂", "\\supset": "⊃", "\\subseteq": "⊆", "\\supseteq": "⊇",
+    "\\in": "∈", "\\notin": "∉", "\\ni": "∋",
+
+    "\\rightarrow": "→", "\\to": "→", "\\leftarrow": "←",
+    "\\leftrightarrow": "↔", "\\Rightarrow": "⇒", "\\Leftarrow": "⇐",
+    "\\Leftrightarrow": "⇔", "\\uparrow": "↑", "\\downarrow": "↓",
+    "\\nearrow": "↗", "\\searrow": "↘", "\\nwarrow": "↖", "\\swarrow": "↙",
+    "\\mapsto": "↦", "\\longmapsto": "⟼",
+    "\\longrightarrow": "⟶", "\\longleftarrow": "⟵",
+
+    "\\infty": "∞", "\\partial": "∂", "\\nabla": "∇",
+    "\\emptyset": "∅", "\\varnothing": "∅",
+    "\\forall": "∀", "\\exists": "∃", "\\nexists": "∄",
+    "\\neg": "¬", "\\lnot": "¬",
+    "\\wedge": "∧", "\\land": "∧", "\\vee": "∨", "\\lor": "∨",
+    "\\cap": "∩", "\\cup": "∪",
+    "\\sqrt": "√", "\\surd": "√",
+    "\\sum": "∑", "\\prod": "∏", "\\int": "∫",
+    "\\iint": "∬", "\\iiint": "∭", "\\oint": "∮",
+    "\\prime": "′", "\\angle": "∠", "\\triangle": "△",
+    "\\perp": "⊥", "\\parallel": "∥", "\\mid": "∣",
+
+    "\\degree": "°", "\\textdegree": "°",
+    "\\copyright": "©", "\\textcopyright": "©",
+    "\\registered": "®", "\\textregistered": "®",
+    "\\trademark": "™", "\\texttrademark": "™",
+    "\\S": "§", "\\P": "¶",
+    "\\pounds": "£", "\\yen": "¥", "\\euro": "€",
+    "\\ldots": "…", "\\cdots": "⋯", "\\dots": "…", "\\vdots": "⋮", "\\ddots": "⋱",
+    "\\checkmark": "✓",
+
+    "\\langle": "⟨", "\\rangle": "⟩",
+    "\\lceil": "⌈", "\\rceil": "⌉", "\\lfloor": "⌊", "\\rfloor": "⌋",
+
+    "\\quad": " ", "\\qquad": "  ", "\\,": " ", "\\;": " ", "\\!": "",
+    "\\%": "%", "\\#": "#", "\\&": "&", "\\_": "_",
+    "\\{": "{", "\\}": "}", "\\$": "$",
+    "\\textbackslash": "\\",
+
+    "\\aa": "å", "\\AA": "Å", "\\ae": "æ", "\\AE": "Æ",
+    "\\oe": "œ", "\\OE": "Œ", "\\ss": "ß"
+  },
+
+  "fractions": {
+    "1/2": "½", "1/3": "⅓", "2/3": "⅔",
+    "1/4": "¼", "3/4": "¾",
+    "1/5": "⅕", "2/5": "⅖", "3/5": "⅗", "4/5": "⅘",
+    "1/6": "⅙", "5/6": "⅚",
+    "1/7": "⅐", "1/8": "⅛", "3/8": "⅜", "5/8": "⅝", "7/8": "⅞",
+    "1/9": "⅑", "1/10": "⅒"
+  }
+}
