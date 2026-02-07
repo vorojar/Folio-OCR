@@ -349,12 +349,19 @@ async function selectPage(num) {
     }
 }
 
-// --- Save textarea edits back to state ---
+// --- Save textarea edits back to state + server ---
 function saveCurrentEditor() {
     const ta = resultBody.querySelector('.result-editor');
     if (ta && state.activePageNum != null) {
         const page = state.pages.find(p => p.num === state.activePageNum);
-        if (page) page.ocr_text = ta.value;
+        if (page) {
+            page.ocr_text = ta.value;
+            // Flush any pending debounce and save immediately
+            clearTimeout(_saveTimer);
+            if (state.activeDocId) {
+                saveTextToServer(state.activeDocId, state.activePageNum, ta.value);
+            }
+        }
     }
 }
 
@@ -460,6 +467,17 @@ async function preOcrNext(currentNum) {
     }
 }
 
+// --- Auto-save debounce ---
+let _saveTimer = null;
+
+function saveTextToServer(docId, pageNum, text) {
+    fetch(`/api/pages/${docId}/${pageNum}/text`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+    }).catch(e => console.warn('Auto-save failed:', e));
+}
+
 // --- Show editable textarea + preview ---
 function showEditor(text, time, regions) {
     resultBody.innerHTML = '';
@@ -471,6 +489,13 @@ function showEditor(text, time, regions) {
     ta.addEventListener('input', () => {
         const page = state.pages.find(p => p.num === state.activePageNum);
         if (page) page.ocr_text = ta.value;
+        // Debounced auto-save to server
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => {
+            if (state.activeDocId && state.activePageNum != null) {
+                saveTextToServer(state.activeDocId, state.activePageNum, ta.value);
+            }
+        }, 800);
     });
     resultBody.appendChild(ta);
 
@@ -761,6 +786,11 @@ reflowBtn.addEventListener('click', () => {
     const preview = resultBody.querySelector('.result-preview');
     if (preview) preview.innerHTML = renderPreview(page.ocr_text);
 
+    // Save reflowed text to server
+    if (state.activeDocId) {
+        saveTextToServer(state.activeDocId, page.num, page.ocr_text);
+    }
+
     reflowBtn.textContent = 'Done!';
     setTimeout(() => reflowBtn.textContent = 'Reflow', 1200);
 });
@@ -772,6 +802,10 @@ reflowAllBtn.addEventListener('click', () => {
         if (page.ocr_text) {
             page.ocr_text = reflowText(page.ocr_text);
             count++;
+            // Save each reflowed page to server
+            if (state.activeDocId) {
+                saveTextToServer(state.activeDocId, page.num, page.ocr_text);
+            }
         }
     }
 
@@ -1200,3 +1234,23 @@ function highlightHtml(html, query) {
     }
     return parts.join('');
 }
+
+// --- Restore last document on page load ---
+async function restoreLastDocument() {
+    try {
+        const res = await fetch('/api/documents');
+        if (!res.ok) return;
+        const docs = await res.json();
+        if (!docs.length) return;
+
+        const latest = docs[0]; // sorted by created_at DESC
+        const detail = await (await fetch(`/api/documents/${latest.doc_id}`)).json();
+
+        initDoc(detail.doc_id, detail.filename);
+        for (const p of detail.pages) addPage(p);
+        if (detail.pages.length) selectPage(detail.pages[0].num);
+    } catch (e) {
+        console.warn('Restore failed:', e);
+    }
+}
+restoreLastDocument();

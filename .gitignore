@@ -6,3 +6,4 @@ server.log
 dist/
 build/
 .env
+*.db

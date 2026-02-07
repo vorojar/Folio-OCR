@@ -36,7 +36,7 @@ start.bat
 - Auto-strips ```` ```markdown ``` ```` fences from model output
 - PDF → PNG via PyMuPDF at 2x resolution
 - Upload returns SSE stream (`init` → `page` × N → `done`) for progressive page loading
-- In-memory document state, uploads in `uploads/{doc_id}/`, orphan cleanup on startup
+- SQLite persistence (`folio_ocr.db`), uploads in `uploads/{doc_id}/`, orphan cleanup on startup
 - Path traversal protection via `_safe_doc_path()`
 - Auto-starts Ollama if not running
 
@@ -58,11 +58,15 @@ start.bat
 - `POST /api/ocr/{doc_id}/{page_num}` — OCR single page (cached if available)
 - `POST /api/ocr/{doc_id}/all` — OCR all pages sequentially
 - `DELETE /api/documents/{doc_id}` — Delete document and images
+- `GET /api/documents` — List all documents with page/OCR counts
+- `GET /api/documents/{doc_id}` — Load document with all pages (for restore)
+- `PUT /api/pages/{doc_id}/{page_num}/text` — Save edited OCR text
 
 ## Key Details
 
 - PDF pages rendered at 2x scale matrix for OCR quality
 - First request after model load ~50s (cold start), subsequent ~0.5s
 - GLM-OCR outputs HTML tables for tabular content; Preview mode renders them natively
-- DOCX export uses Word-compatible HTML with UTF-8 BOM, no external library needed
-- All state is in-memory; restarting the server clears documents
+- DOCX export uses real python-docx, no external HTML needed
+- SQLite persistence (`folio_ocr.db`) — documents and OCR results survive server restarts
+- Frontend auto-restores last document on page load, auto-saves edits (800ms debounce)

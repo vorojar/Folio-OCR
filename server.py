@@ -11,6 +11,8 @@ import base64
 import logging
 import shutil
 import subprocess
+import sqlite3
+from contextlib import contextmanager
 import httpx
 from pathlib import Path
 from datetime import datetime
@@ -76,9 +78,50 @@ _LATEX_SIMPLE: list[tuple[str, str]] = sorted(
 _LATEX_FRACTIONS: dict[str, str] = _LATEX_DATA.get("fractions", {})
 _CIRCLED = {str(i): chr(0x2460 + i - 1) for i in range(1, 21)}  # ①-⑳
 
-# In-memory document state
-# doc_id -> {filename, pages: [{num, filename, ocr_text, ocr_time}], created_at}
-documents: dict[str, dict] = {}
+# --- SQLite persistence ---
+DB_PATH = Path(__file__).parent / "folio_ocr.db"
+
+
+def _init_db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS documents (
+            doc_id     TEXT PRIMARY KEY,
+            filename   TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS pages (
+            doc_id      TEXT NOT NULL REFERENCES documents(doc_id) ON DELETE CASCADE,
+            num         INTEGER NOT NULL,
+            filename    TEXT NOT NULL,
+            ocr_text    TEXT,
+            ocr_regions TEXT,
+            ocr_time    REAL,
+            PRIMARY KEY (doc_id, num)
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+_init_db()
 
 # Shared httpx client
 _http_client: httpx.AsyncClient | None = None
@@ -118,9 +161,12 @@ async def startup_event():
     global _http_client
     _http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
 
-    # Clean up orphan directories from previous runs
+    # Clean up orphan directories not tracked in DB
+    with get_db() as conn:
+        rows = conn.execute("SELECT doc_id FROM documents").fetchall()
+        known_ids = {r["doc_id"] for r in rows}
     for child in UPLOAD_DIR.iterdir():
-        if child.is_dir() and child.name not in documents:
+        if child.is_dir() and child.name not in known_ids:
             logger.info(f"[cleanup] Removing orphan directory: {child}")
             shutil.rmtree(child, ignore_errors=True)
 
@@ -523,11 +569,12 @@ async def upload_files(files: list[UploadFile] = File(...)):
     else:
         display_name = f"{len(file_data)} files"
 
-    documents[doc_id] = {
-        "filename": display_name,
-        "pages": [],
-        "created_at": datetime.now().isoformat(),
-    }
+    created_at = datetime.now().isoformat()
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO documents (doc_id, filename, created_at) VALUES (?, ?, ?)",
+            (doc_id, display_name, created_at),
+        )
 
     async def generate():
         page_num = 0
@@ -549,6 +596,12 @@ async def upload_files(files: list[UploadFile] = File(...)):
                     img_name = f"page_{page_num:03d}.png"
                     pix.save(str(doc_dir / img_name))
 
+                    with get_db() as conn:
+                        conn.execute(
+                            "INSERT INTO pages (doc_id, num, filename) VALUES (?, ?, ?)",
+                            (doc_id, page_num, img_name),
+                        )
+
                     page_info = {
                         "num": page_num,
                         "filename": img_name,
@@ -557,7 +610,6 @@ async def upload_files(files: list[UploadFile] = File(...)):
                         "ocr_regions": None,
                         "ocr_time": None,
                     }
-                    documents[doc_id]["pages"].append(page_info)
                     yield f"data: {json.dumps({'type': 'page', 'page': page_info})}\n\n"
                     await asyncio.sleep(0)
 
@@ -570,14 +622,20 @@ async def upload_files(files: list[UploadFile] = File(...)):
                 with open(doc_dir / img_name, "wb") as fp:
                     fp.write(content)
 
+                with get_db() as conn:
+                    conn.execute(
+                        "INSERT INTO pages (doc_id, num, filename) VALUES (?, ?, ?)",
+                        (doc_id, page_num, img_name),
+                    )
+
                 page_info = {
                     "num": page_num,
                     "filename": img_name,
                     "image_url": f"/api/images/{doc_id}/{img_name}",
                     "ocr_text": None,
+                    "ocr_regions": None,
                     "ocr_time": None,
                 }
-                documents[doc_id]["pages"].append(page_info)
                 yield f"data: {json.dumps({'type': 'page', 'page': page_info})}\n\n"
                 await asyncio.sleep(0)
 
@@ -599,15 +657,10 @@ async def get_image(doc_id: str, filename: str):
 @app.post("/api/ocr/{doc_id}/{page_num}")
 async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)):
     """Run OCR on a single page. Pass ?layout=false to skip layout detection."""
-    if doc_id not in documents:
-        raise HTTPException(404, "Document not found")
-
-    doc = documents[doc_id]
-    page = None
-    for p in doc["pages"]:
-        if p["num"] == page_num:
-            page = p
-            break
+    with get_db() as conn:
+        page = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? AND num=?", (doc_id, page_num)
+        ).fetchone()
     if page is None:
         raise HTTPException(404, f"Page {page_num} not found")
 
@@ -617,7 +670,7 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
             "doc_id": doc_id,
             "page_num": page_num,
             "text": page["ocr_text"],
-            "regions": page.get("ocr_regions") or [],
+            "regions": json.loads(page["ocr_regions"]) if page["ocr_regions"] else [],
             "time": page["ocr_time"],
             "cached": True,
         }
@@ -631,9 +684,11 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
         text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
         elapsed = round(time.time() - t0, 2)
 
-        page["ocr_text"] = text
-        page["ocr_regions"] = regions
-        page["ocr_time"] = elapsed
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE pages SET ocr_text=?, ocr_regions=?, ocr_time=? WHERE doc_id=? AND num=?",
+                (text, json.dumps(regions), elapsed, doc_id, page_num),
+            )
 
         return {
             "doc_id": doc_id,
@@ -655,18 +710,24 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
 @app.post("/api/ocr/{doc_id}/all")
 async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
     """Run OCR on all pages of a document. Pass ?layout=false to skip layout detection."""
-    if doc_id not in documents:
-        raise HTTPException(404, "Document not found")
+    with get_db() as conn:
+        doc_row = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+        if doc_row is None:
+            raise HTTPException(404, "Document not found")
+        pages = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? ORDER BY num", (doc_id,)
+        ).fetchall()
 
-    doc = documents[doc_id]
     results = []
 
-    for page in doc["pages"]:
+    for page in pages:
         if page["ocr_text"] is not None:
             results.append({
                 "page_num": page["num"],
                 "text": page["ocr_text"],
-                "regions": page.get("ocr_regions") or [],
+                "regions": json.loads(page["ocr_regions"]) if page["ocr_regions"] else [],
                 "time": page["ocr_time"],
                 "cached": True,
             })
@@ -678,9 +739,11 @@ async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
             text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
             elapsed = round(time.time() - t0, 2)
 
-            page["ocr_text"] = text
-            page["ocr_regions"] = regions
-            page["ocr_time"] = elapsed
+            with get_db() as conn:
+                conn.execute(
+                    "UPDATE pages SET ocr_text=?, ocr_regions=?, ocr_time=? WHERE doc_id=? AND num=?",
+                    (text, json.dumps(regions), elapsed, doc_id, page["num"]),
+                )
 
             results.append({
                 "page_num": page["num"],
@@ -701,7 +764,7 @@ async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
 
     return {
         "doc_id": doc_id,
-        "filename": doc["filename"],
+        "filename": doc_row["filename"],
         "results": results,
     }
 
@@ -709,16 +772,93 @@ async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
 @app.delete("/api/documents/{doc_id}")
 async def delete_document(doc_id: str):
     """Delete a document and its images"""
-    if doc_id not in documents:
-        raise HTTPException(404, "Document not found")
+    with get_db() as conn:
+        row = conn.execute("SELECT doc_id FROM documents WHERE doc_id=?", (doc_id,)).fetchone()
+        if row is None:
+            raise HTTPException(404, "Document not found")
+        conn.execute("DELETE FROM documents WHERE doc_id=?", (doc_id,))
 
     doc_dir = _safe_doc_path(doc_id)
     if doc_dir.exists():
         shutil.rmtree(doc_dir, ignore_errors=True)
 
-    del documents[doc_id]
     logger.info(f"[delete] Document {doc_id} removed")
     return {"success": True}
+
+
+# --- Save / List / Get endpoints ---
+
+class _SaveTextRequest(BaseModel):
+    text: str
+
+
+@app.put("/api/pages/{doc_id}/{page_num}/text")
+async def save_page_text(doc_id: str, page_num: int, req: _SaveTextRequest):
+    """Save user-edited text for a page."""
+    with get_db() as conn:
+        cur = conn.execute(
+            "UPDATE pages SET ocr_text=? WHERE doc_id=? AND num=?",
+            (req.text, doc_id, page_num),
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Page not found")
+    return {"success": True}
+
+
+@app.get("/api/documents")
+async def list_documents():
+    """List all documents with page counts."""
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT d.doc_id, d.filename, d.created_at,
+                   COUNT(p.num) AS page_count,
+                   SUM(CASE WHEN p.ocr_text IS NOT NULL THEN 1 ELSE 0 END) AS ocr_count
+            FROM documents d
+            LEFT JOIN pages p ON d.doc_id = p.doc_id
+            GROUP BY d.doc_id
+            ORDER BY d.created_at DESC
+        """).fetchall()
+    return [
+        {
+            "doc_id": r["doc_id"],
+            "filename": r["filename"],
+            "created_at": r["created_at"],
+            "page_count": r["page_count"],
+            "ocr_count": r["ocr_count"],
+        }
+        for r in rows
+    ]
+
+
+@app.get("/api/documents/{doc_id}")
+async def get_document(doc_id: str):
+    """Load a document with all its pages (for restore)."""
+    with get_db() as conn:
+        doc_row = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+        if doc_row is None:
+            raise HTTPException(404, "Document not found")
+        pages = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? ORDER BY num", (doc_id,)
+        ).fetchall()
+
+    return {
+        "doc_id": doc_row["doc_id"],
+        "filename": doc_row["filename"],
+        "created_at": doc_row["created_at"],
+        "pages": [
+            {
+                "num": p["num"],
+                "filename": p["filename"],
+                "image_url": f"/api/images/{doc_id}/{p['filename']}",
+                "ocr_text": p["ocr_text"],
+                "ocr_regions": json.loads(p["ocr_regions"]) if p["ocr_regions"] else None,
+                "ocr_time": p["ocr_time"],
+            }
+            for p in pages
+        ],
+    }
 
 
 # --- DOCX Export ---
@@ -936,11 +1076,14 @@ def _build_docx(title: str, pages: list[_ExportPage]) -> io.BytesIO:
 @app.post("/api/export/{doc_id}")
 async def export_docx(doc_id: str, req: _ExportRequest):
     """Export document as a real DOCX file."""
-    if doc_id not in documents:
+    with get_db() as conn:
+        doc_meta = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+    if doc_meta is None:
         raise HTTPException(404, "Document not found")
 
-    doc_meta = documents[doc_id]
-    fallback = doc_meta.get("filename", "Document").replace(".pdf", "")
+    fallback = (doc_meta["filename"] or "Document").replace(".pdf", "")
     title = req.title or fallback
 
     buf = _build_docx(title, req.pages)
