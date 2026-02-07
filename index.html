@@ -641,6 +641,86 @@
 
         .export-item:hover { background: var(--cream); }
 
+        /* === Search === */
+        .search-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .search-toggle {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            transition: color 0.15s;
+        }
+
+        .search-toggle:hover { color: #fff; }
+        .search-toggle.active { color: var(--accent); }
+
+        .search-input {
+            width: 0;
+            padding: 0;
+            border: none;
+            border-radius: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input.open {
+            width: 160px;
+            padding: 5px 10px;
+        }
+
+        .search-input::placeholder { color: rgba(255,255,255,0.4); }
+
+        .search-info {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            white-space: nowrap;
+        }
+
+        .search-nav-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .search-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .search-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+        .page-thumb.search-miss { opacity: 0.35; }
+
+        .page-thumb .search-badge {
+            font-size: 10px;
+            color: var(--accent-dark);
+            background: var(--cream-dark);
+            padding: 0 5px;
+            border-radius: 0.25rem;
+            margin-left: 4px;
+        }
+
+        mark {
+            background: #FBBF24;
+            color: var(--charcoal);
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        mark.current { background: #F97316; color: #fff; }
+
         /* === Hidden file input === */
         #fileInput { display: none; }
 
@@ -658,6 +738,15 @@
         <span class="topbar-divider"></span>
         <span class="topbar-filename" id="topFilename">No document</span>
         <span class="topbar-spacer"></span>
+        <span class="search-wrap" id="searchWrap" style="display:none;">
+            <button class="search-toggle" id="searchToggle" title="Search (Ctrl+F)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            <input class="search-input" id="searchInput" type="text" placeholder="Search...">
+            <span class="search-info" id="searchInfo"></span>
+            <button class="search-nav-btn" id="searchPrev" disabled>&#9650;</button>
+            <button class="search-nav-btn" id="searchNext" disabled>&#9660;</button>
+        </span>
         <span class="topbar-status">
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">Checking...</span>
@@ -786,6 +875,12 @@
         const reflowAllBtn     = $('reflowAllBtn');
         const copyPageBtn      = $('copyPageBtn');
         const fileInput        = $('fileInput');
+        const searchWrap       = $('searchWrap');
+        const searchToggle     = $('searchToggle');
+        const searchInput      = $('searchInput');
+        const searchInfo       = $('searchInfo');
+        const searchPrev       = $('searchPrev');
+        const searchNext       = $('searchNext');
 
         // --- Status polling ---
         async function checkStatus() {
@@ -939,6 +1034,8 @@
             ocrAllBtn.style.display = '';
             exportWrap.style.display = '';
             copyAllBtn.style.display = '';
+            searchWrap.style.display = '';
+            clearSearch();
         }
 
         function addPage(page) {
@@ -1161,9 +1258,9 @@
             preview.className = 'result-preview' + (state.viewMode !== 'preview' ? ' hidden' : '');
             // If we have regions, render as clickable blocks; otherwise fallback
             if (regions && regions.length > 0) {
-                preview.innerHTML = renderRegionBlocks(regions);
+                preview.innerHTML = renderRegionBlocks(regions, _searchQuery);
             } else {
-                preview.innerHTML = renderPreview(text || '');
+                preview.innerHTML = renderPreview(text || '', _searchQuery);
             }
             resultBody.appendChild(preview);
 
@@ -1179,9 +1276,9 @@
         }
 
         // --- Render region blocks for preview with bidirectional highlighting ---
-        function renderRegionBlocks(regions) {
+        function renderRegionBlocks(regions, searchQuery) {
             return regions.map(r => {
-                const rendered = renderPreview(r.text || '');
+                const rendered = renderPreview(r.text || '', searchQuery);
                 return `<div class="region-block" data-idx="${r.idx}" onclick="highlightRegion(${r.idx})">${rendered}</div>`;
             }).join('');
         }
@@ -1250,7 +1347,7 @@
         window.highlightRegion = highlightRegion;
 
         // --- Render markdown/HTML to preview HTML ---
-        function renderPreview(text) {
+        function renderPreview(text, searchQuery) {
             if (!text) return '<span style="color:rgba(45,45,45,0.3)">No text recognized</span>';
 
             // Split by HTML block elements (tables) to preserve them
@@ -1260,11 +1357,13 @@
 
             for (const part of parts) {
                 if (part.match(/^<table[\s\S]*<\/table>$/i)) {
-                    // HTML table — pass through directly
-                    html += part;
+                    // HTML table — pass through, then highlight text nodes
+                    html += searchQuery ? highlightHtml(part, searchQuery) : part;
                 } else {
                     // Process as simple markdown
-                    html += markdownToHtml(part);
+                    let rendered = markdownToHtml(part);
+                    if (searchQuery) rendered = highlightHtml(rendered, searchQuery);
+                    html += rendered;
                 }
             }
             return html;
@@ -1353,9 +1452,9 @@
                 // Refresh preview from current state
                 const page = state.pages.find(p => p.num === state.activePageNum);
                 if (page && page.ocr_regions && page.ocr_regions.length > 0) {
-                    preview.innerHTML = renderRegionBlocks(page.ocr_regions);
+                    preview.innerHTML = renderRegionBlocks(page.ocr_regions, _searchQuery);
                 } else {
-                    preview.innerHTML = renderPreview(page ? page.ocr_text || '' : '');
+                    preview.innerHTML = renderPreview(page ? page.ocr_text || '' : '', _searchQuery);
                 }
                 ta.classList.add('hidden');
                 preview.classList.remove('hidden');
@@ -1695,6 +1794,184 @@
                 ocrProgressBar.style.width = '0%';
             }, 1500);
         });
+        // --- Full-text search ---
+        let _searchMatches = [];  // [{pageNum, count}]
+        let _searchIdx = -1;     // current match index (which page in _searchMatches)
+        let _searchQuery = '';
+
+        // Ctrl+F or click icon opens search, Escape closes
+        function openSearch() {
+            searchInput.classList.add('open');
+            searchToggle.classList.add('active');
+            searchInput.focus();
+            searchInput.select();
+        }
+
+        searchToggle.addEventListener('click', () => {
+            if (searchInput.classList.contains('open')) {
+                clearSearch();
+            } else {
+                openSearch();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f' && state.activeDocId) {
+                e.preventDefault();
+                openSearch();
+            }
+            if (e.key === 'Escape' && document.activeElement === searchInput) {
+                clearSearch();
+            }
+        });
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.trim();
+            if (q.length === 0) {
+                clearSearch(true);  // keep input open
+                return;
+            }
+            runSearch(q);
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) navSearch(-1);
+                else navSearch(1);
+            }
+        });
+
+        searchPrev.addEventListener('click', () => navSearch(-1));
+        searchNext.addEventListener('click', () => navSearch(1));
+
+        function runSearch(query) {
+            _searchQuery = query;
+            _searchMatches = [];
+            const lower = query.toLowerCase();
+
+            for (const page of state.pages) {
+                if (!page.ocr_text) continue;
+                const text = page.ocr_text.toLowerCase();
+                let count = 0, idx = 0;
+                while ((idx = text.indexOf(lower, idx)) !== -1) {
+                    count++;
+                    idx += lower.length;
+                }
+                if (count > 0) _searchMatches.push({ pageNum: page.num, count });
+            }
+
+            // Update page list badges
+            updateSearchBadges();
+
+            const total = _searchMatches.reduce((s, m) => s + m.count, 0);
+            if (_searchMatches.length > 0) {
+                searchInfo.textContent = `${_searchMatches.length} pages · ${total} hits`;
+                searchPrev.disabled = false;
+                searchNext.disabled = false;
+                // Auto-jump to first match if not already on a matching page
+                const onMatch = _searchMatches.find(m => m.pageNum === state.activePageNum);
+                if (!onMatch) {
+                    _searchIdx = 0;
+                    selectPage(_searchMatches[0].pageNum);
+                } else {
+                    _searchIdx = _searchMatches.findIndex(m => m.pageNum === state.activePageNum);
+                    refreshSearchHighlight();
+                }
+            } else {
+                searchInfo.textContent = 'No results';
+                searchPrev.disabled = true;
+                searchNext.disabled = true;
+                _searchIdx = -1;
+                refreshSearchHighlight();
+            }
+        }
+
+        function navSearch(dir) {
+            if (_searchMatches.length === 0) return;
+            _searchIdx = (_searchIdx + dir + _searchMatches.length) % _searchMatches.length;
+            const match = _searchMatches[_searchIdx];
+            searchInfo.textContent = `${_searchIdx + 1}/${_searchMatches.length} pages`;
+            selectPage(match.pageNum);
+        }
+
+        function clearSearch(keepOpen) {
+            _searchQuery = '';
+            _searchMatches = [];
+            _searchIdx = -1;
+            searchInfo.textContent = '';
+            searchPrev.disabled = true;
+            searchNext.disabled = true;
+            if (!keepOpen) {
+                searchInput.value = '';
+                searchInput.classList.remove('open');
+                searchToggle.classList.remove('active');
+                searchInput.blur();
+            }
+            updateSearchBadges();
+            refreshSearchHighlight();
+        }
+
+        function updateSearchBadges() {
+            const thumbs = pageList.querySelectorAll('.page-thumb');
+            thumbs.forEach(el => {
+                const num = parseInt(el.dataset.num);
+                const match = _searchMatches.find(m => m.pageNum === num);
+                const badge = el.querySelector('.search-badge');
+
+                if (_searchQuery) {
+                    el.classList.toggle('search-miss', !match);
+                    if (match) {
+                        if (!badge) {
+                            const b = document.createElement('span');
+                            b.className = 'search-badge';
+                            b.textContent = match.count;
+                            el.querySelector('.page-thumb-label').appendChild(b);
+                        } else {
+                            badge.textContent = match.count;
+                        }
+                    } else if (badge) {
+                        badge.remove();
+                    }
+                } else {
+                    el.classList.remove('search-miss');
+                    if (badge) badge.remove();
+                }
+            });
+        }
+
+        // Highlight search matches in the preview panel
+        function refreshSearchHighlight() {
+            const preview = resultBody.querySelector('.result-preview');
+            if (!preview || !_searchQuery) return;
+
+            // Re-render preview with highlights
+            const page = state.pages.find(p => p.num === state.activePageNum);
+            if (!page) return;
+
+            if (page.ocr_regions && page.ocr_regions.length > 0) {
+                preview.innerHTML = renderRegionBlocks(page.ocr_regions, _searchQuery);
+            } else {
+                preview.innerHTML = renderPreview(page.ocr_text || '', _searchQuery);
+            }
+        }
+
+        // Inject <mark> highlights into rendered HTML, only in text nodes (skip tags)
+        function highlightHtml(html, query) {
+            if (!query) return html;
+            // Split by HTML tags — even parts are text, odd parts are tags
+            const parts = html.split(/(<[^>]+>)/g);
+            const lower = query.toLowerCase();
+            const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp(`(${esc})`, 'gi');
+            for (let i = 0; i < parts.length; i++) {
+                // Only process text nodes (not tags)
+                if (!parts[i].startsWith('<')) {
+                    parts[i] = parts[i].replace(re, '<mark>$1</mark>');
+                }
+            }
+            return parts.join('');
+        }
     </script>
 </body>
 </html>

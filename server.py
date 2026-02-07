@@ -207,10 +207,10 @@ def _group_bbox(regions: list[dict]) -> list[int]:
     return [x1, y1, x2, y2]
 
 
-async def ocr_image_with_layout(image_path: str) -> tuple[str, list[dict]]:
-    """Run layout detection + per-region OCR.
-    Returns (combined_text, regions_list) where each region has {idx, label, bbox, text}.
-    Adjacent text regions are merged into one OCR call to reduce latency.
+async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[str, list[dict]]:
+    """Run layout detection + OCR.
+    merge=True:  adjacent text regions merged into fewer OCR calls (fast, coarse regions).
+    merge=False: each region OCR'd individually (slow, fine-grained regions for proofreading).
     """
     t0 = time.time()
     img = Image.open(image_path).convert("RGB")
@@ -229,32 +229,50 @@ async def ocr_image_with_layout(image_path: str) -> tuple[str, list[dict]]:
         logger.info(f"[OCR] TOTAL (fallback): {elapsed:.2f}s")
         return text, []
 
-    # Step 2: Merge adjacent text regions, then OCR each group
-    groups = _merge_adjacent_regions(raw_regions)
-    logger.info(f"[OCR] Merged {len(raw_regions)} regions into {len(groups)} groups")
-
     regions = []
-    for gi, group in enumerate(groups):
-        bbox = _group_bbox(group)
-        cropped = img.crop(bbox)
-        seg_b64 = _image_to_b64(cropped)
-        text = await _ocr_single(seg_b64)
-        text = _postprocess(text)
 
-        label = group[0]["label"] if len(group) == 1 else "text"
-        regions.append({
-            "idx": gi,
-            "label": label,
-            "bbox": bbox,
-            "text": text or "",
-        })
-        logger.info(f"[OCR] Group {gi+1}/{len(groups)} ({label}, {len(group)} merged): {len(text)} chars")
+    if merge:
+        # Fast path: merge adjacent text regions into groups
+        groups = _merge_adjacent_regions(raw_regions)
+        logger.info(f"[OCR] Merged {len(raw_regions)} regions into {len(groups)} groups")
+
+        for gi, group in enumerate(groups):
+            bbox = _group_bbox(group)
+            cropped = img.crop(bbox)
+            seg_b64 = _image_to_b64(cropped)
+            text = await _ocr_single(seg_b64)
+            text = _postprocess(text)
+
+            label = group[0]["label"] if len(group) == 1 else "text"
+            regions.append({
+                "idx": gi,
+                "label": label,
+                "bbox": bbox,
+                "text": text or "",
+            })
+            logger.info(f"[OCR] Group {gi+1}/{len(groups)} ({label}, {len(group)} merged): {len(text)} chars")
+    else:
+        # Fine-grained path: OCR each region individually
+        for i, region in enumerate(raw_regions):
+            bbox = region["bbox"]
+            cropped = img.crop(bbox)
+            seg_b64 = _image_to_b64(cropped)
+            text = await _ocr_single(seg_b64)
+            text = _postprocess(text)
+
+            regions.append({
+                "idx": i,
+                "label": region["label"],
+                "bbox": bbox,
+                "text": text or "",
+            })
+            logger.info(f"[OCR] Region {i+1}/{len(raw_regions)} ({region['label']}): {len(text)} chars")
 
     img.close()
 
-    # Combine all text for backward compatibility
     combined = "\n\n".join(r["text"] for r in regions if r["text"])
-    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(raw_regions)} regions -> {len(groups)} calls)")
+    n_calls = len(regions)
+    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(raw_regions)} regions, {n_calls} calls, merge={'on' if merge else 'off'})")
     return combined, regions
 
 
@@ -597,13 +615,7 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
 
     try:
         t0 = time.time()
-        if layout:
-            text, regions = await ocr_image_with_layout(str(image_path))
-        else:
-            img = Image.open(str(image_path)).convert("RGB")
-            text = await _ocr_whole_image(img)
-            img.close()
-            regions = []
+        text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
         elapsed = round(time.time() - t0, 2)
 
         page["ocr_text"] = text
@@ -650,13 +662,7 @@ async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
         image_path = _safe_doc_path(doc_id, page["filename"])
         try:
             t0 = time.time()
-            if layout:
-                text, regions = await ocr_image_with_layout(str(image_path))
-            else:
-                img = Image.open(str(image_path)).convert("RGB")
-                text = await _ocr_whole_image(img)
-                img.close()
-                regions = []
+            text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
             elapsed = round(time.time() - t0, 2)
 
             page["ocr_text"] = text
