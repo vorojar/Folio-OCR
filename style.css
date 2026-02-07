@@ -565,9 +565,31 @@ body {
     font-weight: 600;
 }
 
+/* === Resize Handle === */
+.resize-handle {
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+    margin-left: -3px;
+    margin-right: -2px;
+    transition: background 0.15s;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+    background: var(--accent);
+}
+
+.resize-handle.hidden {
+    display: none;
+}
+
 /* === Right Panel (OCR Result) === */
 .panel-right {
-    width: 380px;
+    width: 480px;
     background: #fff;
     border-left: 1px solid var(--warm-gray);
     display: flex;

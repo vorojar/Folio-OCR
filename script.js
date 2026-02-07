@@ -58,6 +58,37 @@ const docListHeader = $('docListHeader');
 const docList = $('docList');
 const docListCount = $('docListCount');
 const docListToggle = $('docListToggle');
+const resizeHandle = $('resizeHandle');
+
+// --- Resize handle (drag to resize right panel) ---
+{
+    let startX, startWidth;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startX = e.clientX;
+        startWidth = panelRight.offsetWidth;
+        resizeHandle.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('mouseup', onDragEnd);
+    });
+
+    function onDrag(e) {
+        const delta = startX - e.clientX;
+        const newWidth = Math.min(Math.max(startWidth + delta, 280), window.innerWidth * 0.6);
+        panelRight.style.width = newWidth + 'px';
+    }
+
+    function onDragEnd() {
+        resizeHandle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('mouseup', onDragEnd);
+    }
+}
 
 // --- Status polling ---
 async function checkStatus() {
@@ -240,6 +271,7 @@ function initDoc(docId, filename) {
     pageList.innerHTML = '';
     panelLeft.classList.remove('hidden');
     panelRight.classList.remove('hidden');
+    resizeHandle.classList.remove('hidden');
     uploadZone.classList.add('hidden');
     layoutToggleWrap.style.display = '';
     ocrAllBtn.style.display = '';
@@ -1410,6 +1442,7 @@ async function deleteDocument(docId, filename) {
             pageList.innerHTML = '';
             panelLeft.classList.add('hidden');
             panelRight.classList.add('hidden');
+            resizeHandle.classList.add('hidden');
             uploadZone.classList.remove('hidden');
             previewContainer.classList.remove('show');
             previewImage.src = '';
