@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folio-OCR — 智能文档 OCR 工作台</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --cream: #F9F7F5;
+  --cream-dark: #F0EDE8;
+  --warm-gray: #E8E4DE;
+  --charcoal: #2D2D2D;
+  --accent: #D4A373;
+  --accent-dark: #B8956A;
+  --radius: 0.75rem;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--charcoal);
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(20px, 4vw, 48px);
+  box-shadow: 0 2px 20px rgba(0,0,0,.15);
+}
+.nav-brand {
+  font-size: 20px; font-weight: 700; color: var(--accent);
+  letter-spacing: -0.5px; text-decoration: none;
+}
+.nav-links { display: flex; gap: 8px; }
+.nav-links a {
+  color: rgba(255,255,255,.7); text-decoration: none;
+  font-size: 14px; font-weight: 500;
+  padding: 6px 14px; border-radius: var(--radius);
+  transition: all .15s;
+}
+.nav-links a:hover { color: #fff; background: rgba(255,255,255,.1); }
+.nav-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px; border-radius: var(--radius);
+  background: var(--accent); color: #fff;
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  transition: background .15s;
+}
+.nav-btn:hover { background: var(--accent-dark); }
+.nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* ── Hero ── */
+.hero {
+  padding: 140px clamp(20px, 4vw, 48px) 80px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--charcoal) 0%, var(--charcoal) 340px, var(--cream) 340px);
+}
+.hero h1 {
+  font-size: clamp(32px, 5vw, 56px); font-weight: 700;
+  color: #fff; margin-bottom: 16px;
+  letter-spacing: -1px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: clamp(16px, 2vw, 20px);
+  color: rgba(255,255,255,.65);
+  max-width: 600px; margin: 0 auto 40px;
+}
+.hero-actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 56px; flex-wrap: wrap; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; border-radius: var(--radius);
+  background: var(--accent); color: #fff;
+  font-size: 16px; font-weight: 600;
+  text-decoration: none; transition: all .2s;
+  box-shadow: 0 4px 16px rgba(212,163,115,.35);
+}
+.btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(212,163,115,.4); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; border-radius: var(--radius);
+  background: rgba(255,255,255,.1); color: rgba(255,255,255,.85);
+  font-size: 16px; font-weight: 600;
+  text-decoration: none; transition: all .2s;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.btn-secondary:hover { background: rgba(255,255,255,.18); color: #fff; }
+.btn-secondary svg, .btn-primary svg { width: 18px; height: 18px; fill: currentColor; }
+
+.hero-screenshot {
+  max-width: 1100px; margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
+}
+.hero-screenshot img { width: 100%; display: block; }
+
+/* ── Section base ── */
+section { padding: 80px clamp(20px, 4vw, 48px); }
+.section-title {
+  text-align: center; font-size: clamp(24px, 3.5vw, 36px);
+  font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px;
+}
+.section-sub {
+  text-align: center; font-size: 16px;
+  color: rgba(45,45,45,.55); margin-bottom: 48px;
+  max-width: 520px; margin-left: auto; margin-right: auto;
+}
+
+/* ── Features ── */
+.features { background: var(--cream); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1100px; margin: 0 auto;
+}
+.feature-card {
+  background: #fff;
+  border: 1px solid var(--warm-gray);
+  border-radius: 12px;
+  padding: 32px 28px;
+  transition: all .2s;
+}
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.07); }
+.feature-icon {
+  width: 44px; height: 44px;
+  background: rgba(212,163,115,.12);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; font-size: 22px;
+}
+.feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: rgba(45,45,45,.6); line-height: 1.7; }
+
+/* ── Deploy ── */
+.deploy { background: var(--cream-dark); }
+.deploy-box {
+  max-width: 720px; margin: 0 auto;
+  background: var(--charcoal);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,.12);
+}
+.deploy-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px;
+  background: rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.deploy-dot { width: 12px; height: 12px; border-radius: 50%; }
+.deploy-dot:nth-child(1) { background: #FF5F57; }
+.deploy-dot:nth-child(2) { background: #FFBD2E; }
+.deploy-dot:nth-child(3) { background: #28CA41; }
+.deploy-header span {
+  margin-left: 8px;
+  font-size: 13px; color: rgba(255,255,255,.4);
+  font-family: monospace;
+}
+.deploy-body { padding: 24px 28px; }
+.deploy-body pre {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px; line-height: 1.9;
+  color: rgba(255,255,255,.85);
+  overflow-x: auto;
+}
+.deploy-body .comment { color: rgba(255,255,255,.35); }
+.deploy-body .cmd { color: var(--accent); }
+.deploy-note {
+  max-width: 720px; margin: 20px auto 0;
+  text-align: center; font-size: 14px;
+  color: rgba(45,45,45,.5);
+}
+
+/* ── Tech ── */
+.tech { background: var(--cream); }
+.tech-grid {
+  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  max-width: 900px; margin: 0 auto;
+}
+.tech-tag {
+  padding: 10px 22px;
+  background: #fff;
+  border: 1px solid var(--warm-gray);
+  border-radius: 40px;
+  font-size: 14px; font-weight: 500;
+  color: var(--charcoal);
+  display: flex; align-items: center; gap: 8px;
+  transition: all .15s;
+}
+.tech-tag:hover { border-color: var(--accent); background: rgba(212,163,115,.06); }
+.tech-tag span { font-size: 18px; }
+
+/* ── Footer ── */
+footer {
+  background: var(--charcoal);
+  color: rgba(255,255,255,.4);
+  text-align: center;
+  padding: 32px 20px;
+  font-size: 14px;
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { color: var(--accent-dark); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .hero { padding-top: 120px; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .btn-primary, .btn-secondary { width: 100%; max-width: 280px; justify-content: center; }
+  .features-grid { grid-template-columns: 1fr; }
+  section { padding: 56px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-brand" href="#">Folio-OCR</a>
+  <div class="nav-links">
+    <a href="#features">功能</a>
+    <a href="#deploy">部署</a>
+    <a href="https://github.com/vorojar/Folio-OCR" class="nav-btn" target="_blank">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>智能文档 <span>OCR</span> 工作台</h1>
+  <p>基于 GLM-OCR + Ollama，三栏布局、批量识别、一键导出，专为书籍和文档设计</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="#deploy">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      快速部署
+    </a>
+    <a class="btn-secondary" href="https://github.com/vorojar/Folio-OCR" target="_blank">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      查看源码
+    </a>
+  </div>
+  <div class="hero-screenshot">
+    <img src="demo.png" alt="Folio-OCR 界面截图">
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <h2 class="section-title">核心功能</h2>
+  <p class="section-sub">从上传到导出，覆盖文档 OCR 全流程</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">&#128196;</div>
+      <h3>多格式支持</h3>
+      <p>PNG、JPG、GIF、BMP 图片和 PDF 文件混合上传，PDF 以 2x 高分辨率拆页确保识别质量</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9881;</div>
+      <h3>版面分析</h3>
+      <p>自动检测标题、正文、表格、图片等区域，智能合并相邻文本区域减少 OCR 调用（2.5x 加速）</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9889;</div>
+      <h3>批量识别</h3>
+      <p>一键 OCR 全部页面，实时进度条 + ETA 估算，随时可停，选页时自动预识别下一页</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9998;</div>
+      <h3>编辑预览</h3>
+      <p>Edit / Preview 双模式切换，Preview 原生渲染 HTML 表格和 Markdown，段落智能重排</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128230;</div>
+      <h3>多格式导出</h3>
+      <p>支持 .md、.txt、.docx 三种格式，DOCX 基于 python-docx 生成真实 Word 文档</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128190;</div>
+      <h3>数据持久化</h3>
+      <p>SQLite 数据库自动保存，编辑内容 800ms 防抖存盘，重启服务不丢数据，自动恢复上次文档</p>
+    </div>
+  </div>
+</section>
+
+<!-- Deploy -->
+<section class="deploy" id="deploy">
+  <h2 class="section-title">三条命令，即刻部署</h2>
+  <p class="section-sub">Docker Compose 一键启动，无需手动配置环境</p>
+  <div class="deploy-box">
+    <div class="deploy-header">
+      <div class="deploy-dot"></div>
+      <div class="deploy-dot"></div>
+      <div class="deploy-dot"></div>
+      <span>Terminal</span>
+    </div>
+    <div class="deploy-body">
+      <pre><span class="comment"># 克隆项目</span>
+<span class="cmd">git clone</span> https://github.com/vorojar/Folio-OCR.git
+<span class="cmd">cd</span> Folio-OCR
+
+<span class="comment"># 启动全部服务</span>
+<span class="cmd">docker compose</span> up -d
+
+<span class="comment"># 下载 OCR 模型（约 2GB，仅首次）</span>
+<span class="cmd">docker compose exec</span> ollama ollama pull glm-ocr
+
+<span class="comment"># 打开浏览器访问</span>
+<span class="cmd">open</span> http://localhost:3000</pre>
+    </div>
+  </div>
+  <p class="deploy-note">也支持不用 Docker 直接运行 — 详见 <a href="https://github.com/vorojar/Folio-OCR#%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E4%B8%8D%E7%94%A8-docker" target="_blank">本地部署说明</a></p>
+</section>
+
+<!-- Tech -->
+<section class="tech" id="tech">
+  <h2 class="section-title">技术栈</h2>
+  <p class="section-sub">轻量架构，单文件后端 + 单文件前端</p>
+  <div class="tech-grid">
+    <div class="tech-tag"><span>&#129302;</span> GLM-OCR</div>
+    <div class="tech-tag"><span>&#128048;</span> Ollama</div>
+    <div class="tech-tag"><span>&#9889;</span> FastAPI</div>
+    <div class="tech-tag"><span>&#127912;</span> Vanilla JS</div>
+    <div class="tech-tag"><span>&#128451;</span> SQLite</div>
+    <div class="tech-tag"><span>&#128206;</span> PyMuPDF</div>
+    <div class="tech-tag"><span>&#128220;</span> python-docx</div>
+    <div class="tech-tag"><span>&#128051;</span> Docker</div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>Folio-OCR &mdash; Made with &#9749; by <a href="https://github.com/vorojar" target="_blank">vorojar</a></p>
+</footer>
+
+</body>
+</html>
