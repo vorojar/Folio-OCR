@@ -672,6 +672,7 @@ class _ExportPage(BaseModel):
 
 class _ExportRequest(BaseModel):
     pages: list[_ExportPage]
+    title: str | None = None
 
 
 class _TableParser(HTMLParser):
@@ -882,7 +883,8 @@ async def export_docx(doc_id: str, req: _ExportRequest):
         raise HTTPException(404, "Document not found")
 
     doc_meta = documents[doc_id]
-    title = doc_meta.get("filename", "Document").replace(".pdf", "")
+    fallback = doc_meta.get("filename", "Document").replace(".pdf", "")
+    title = req.title or fallback
 
     buf = _build_docx(title, req.pages)
 

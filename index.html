@@ -1466,11 +1466,16 @@
                 // Server-side DOCX generation
                 const pages = state.pages.map(p => ({ num: p.num, text: p.ocr_text || '' }));
                 if (pages.every(p => !p.text)) return;
+                // Extract title from first page's layout regions (label === "title")
+                const firstPage = state.pages[0];
+                const titleRegion = (firstPage && firstPage.ocr_regions || [])
+                    .find(r => r.label === 'title');
+                const docTitle = titleRegion ? titleRegion.text.trim() : null;
                 try {
                     const res = await fetch(`/api/export/${state.activeDocId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pages }),
+                        body: JSON.stringify({ pages, title: docTitle }),
                     });
                     if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`);
                     const blob = await res.blob();
