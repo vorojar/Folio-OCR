@@ -276,13 +276,87 @@
 
         .preview-container.show { display: flex; }
 
-        .preview-container img {
+        .preview-wrap {
+            position: relative;
+            display: inline-block;
             max-width: 100%;
             max-height: 100%;
+        }
+
+        .preview-wrap img {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 100px);
             object-fit: contain;
             border-radius: 0.75rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
+
+        .bbox-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        .bbox-rect {
+            position: absolute;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            opacity: 0;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.15s;
+        }
+
+        .bbox-rect:hover { opacity: 0.5; background: rgba(212,163,115,0.1); }
+        .bbox-rect.active { opacity: 0.8; background: rgba(212,163,115,0.15); border-width: 3px; }
+
+        /* Region blocks in right panel */
+        .region-block {
+            cursor: pointer;
+            transition: background 0.15s;
+            border-radius: 4px;
+        }
+
+        .region-block.active { background: rgba(212,163,115,0.12); }
+
+        .region-label {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--accent-dark);
+            background: var(--cream-dark);
+            padding: 1px 6px;
+            border-radius: 0.25rem;
+            margin-bottom: 4px;
+        }
+
+        .region-text {
+            font-size: 14px;
+            line-height: 1.7;
+            white-space: pre-line;
+            word-break: break-all;
+        }
+
+        .region-text table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 4px 0;
+            white-space: normal;
+            word-break: normal;
+        }
+
+        .region-text th,
+        .region-text td {
+            border: 1px solid var(--warm-gray);
+            padding: 4px 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .region-text th { background: var(--cream-dark); font-weight: 600; }
 
         /* === Right Panel (OCR Result) === */
         .panel-right {
@@ -484,6 +558,42 @@
             font-size: 13px;
         }
 
+        /* === Layout toggle === */
+        .layout-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            white-space: nowrap;
+        }
+
+        .layout-switch {
+            position: relative;
+            width: 32px;
+            height: 18px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .layout-switch.on { background: var(--accent); }
+
+        .layout-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .layout-switch.on::after { transform: translateX(14px); }
+
         /* === Progress bar === */
         .ocr-progress {
             height: 3px;
@@ -554,6 +664,10 @@
         </span>
         <button class="topbar-btn" id="loadModelBtn" style="display:none;">Load Model</button>
         <button class="topbar-btn" id="newFileBtn" title="Upload new file">Upload</button>
+        <span class="layout-toggle" id="layoutToggleWrap" style="display:none;">
+            <div class="layout-switch on" id="layoutSwitch" title="Toggle layout detection"></div>
+            <span>Layout</span>
+        </span>
         <button class="topbar-btn primary" id="ocrAllBtn" style="display:none;">OCR All Pages</button>
         <span class="export-wrap" id="exportWrap" style="display:none;">
             <button class="topbar-btn" id="exportBtn">Export</button>
@@ -590,7 +704,10 @@
                 <small>Supports: PNG, JPG, GIF, BMP, PDF</small>
             </div>
             <div class="preview-container" id="previewContainer">
-                <img id="previewImage" src="" alt="Preview">
+                <div class="preview-wrap" id="previewWrap">
+                    <img id="previewImage" src="" alt="Preview">
+                    <div class="bbox-overlay" id="bboxOverlay"></div>
+                </div>
             </div>
         </div>
 
@@ -633,6 +750,7 @@
             ocrRunning: false,
             ocrAbort: false,
             viewMode: 'edit',
+            layoutEnabled: true,
         };
 
         // --- DOM refs ---
@@ -642,6 +760,8 @@
         const statusText       = $('statusText');
         const loadModelBtn     = $('loadModelBtn');
         const newFileBtn       = $('newFileBtn');
+        const layoutToggleWrap = $('layoutToggleWrap');
+        const layoutSwitch     = $('layoutSwitch');
         const ocrAllBtn        = $('ocrAllBtn');
         const exportWrap       = $('exportWrap');
         const exportBtn        = $('exportBtn');
@@ -654,7 +774,9 @@
         const panelCenter      = $('panelCenter');
         const uploadZone       = $('uploadZone');
         const previewContainer = $('previewContainer');
+        const previewWrap      = $('previewWrap');
         const previewImage     = $('previewImage');
+        const bboxOverlay      = $('bboxOverlay');
         const panelRight       = $('panelRight');
         const resultBody       = $('resultBody');
         const resultTime       = $('resultTime');
@@ -708,6 +830,14 @@
                 loadModelBtn.textContent = 'Load Model';
                 checkStatus();
             }
+        });
+
+        // --- Layout toggle ---
+        layoutSwitch.addEventListener('click', () => {
+            state.layoutEnabled = !state.layoutEnabled;
+            layoutSwitch.classList.toggle('on', state.layoutEnabled);
+            // Update bbox overlay visibility
+            bboxOverlay.style.display = state.layoutEnabled ? '' : 'none';
         });
 
         // --- File upload ---
@@ -773,6 +903,7 @@
             pageList.innerHTML = '';
             previewContainer.classList.remove('show');
             previewImage.src = '';
+            bboxOverlay.innerHTML = '';
             resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
             resultTime.style.display = 'none';
             resultToolbar.style.display = 'none';
@@ -804,6 +935,7 @@
             panelLeft.classList.remove('hidden');
             panelRight.classList.remove('hidden');
             uploadZone.classList.add('hidden');
+            layoutToggleWrap.style.display = '';
             ocrAllBtn.style.display = '';
             exportWrap.style.display = '';
             copyAllBtn.style.display = '';
@@ -883,9 +1015,11 @@
 
             previewContainer.classList.add('show');
             previewImage.src = page.image_url;
+            // Render bbox overlay once image loads (needs natural dimensions)
+            previewImage.onload = () => renderBboxOverlay(page.ocr_regions);
 
             if (page.ocr_text !== null && page.ocr_text !== undefined) {
-                showEditor(page.ocr_text, page.ocr_time);
+                showEditor(page.ocr_text, page.ocr_time, page.ocr_regions);
             } else {
                 await runOcrForPage(page);
             }
@@ -912,7 +1046,7 @@
             }
 
             try {
-                const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}`, { method: 'POST' });
+                const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
                 if (!res.ok) {
                     const err = await res.json();
                     throw new Error(err.detail || 'OCR failed');
@@ -920,6 +1054,7 @@
                 const data = await res.json();
 
                 page.ocr_text = data.text;
+                page.ocr_regions = data.regions || [];
                 page.ocr_time = data.time;
 
                 if (thumbStatus) {
@@ -928,7 +1063,8 @@
                 }
 
                 if (state.activePageNum === page.num) {
-                    showEditor(data.text, data.time);
+                    renderBboxOverlay(page.ocr_regions);
+                    showEditor(data.text, data.time, page.ocr_regions);
                 }
             } catch (e) {
                 if (thumbStatus) {
@@ -942,7 +1078,7 @@
         }
 
         // --- Show editable textarea + preview ---
-        function showEditor(text, time) {
+        function showEditor(text, time, regions) {
             resultBody.innerHTML = '';
 
             const ta = document.createElement('textarea');
@@ -957,7 +1093,12 @@
 
             const preview = document.createElement('div');
             preview.className = 'result-preview' + (state.viewMode !== 'preview' ? ' hidden' : '');
-            preview.innerHTML = renderPreview(text || '');
+            // If we have regions, render as clickable blocks; otherwise fallback
+            if (regions && regions.length > 0) {
+                preview.innerHTML = renderRegionBlocks(regions);
+            } else {
+                preview.innerHTML = renderPreview(text || '');
+            }
             resultBody.appendChild(preview);
 
             resultToolbar.style.display = '';
@@ -970,6 +1111,77 @@
                 resultTime.style.display = 'none';
             }
         }
+
+        // --- Render region blocks for preview with bidirectional highlighting ---
+        function renderRegionBlocks(regions) {
+            return regions.map(r => {
+                const rendered = renderPreview(r.text || '');
+                return `<div class="region-block" data-idx="${r.idx}" onclick="highlightRegion(${r.idx})">${rendered}</div>`;
+            }).join('');
+        }
+
+        // --- Render bbox overlay on image ---
+        function renderBboxOverlay(regions) {
+            bboxOverlay.innerHTML = '';
+            if (!regions || regions.length === 0) return;
+
+            const img = previewImage;
+            if (!img.naturalWidth) return;
+
+            const scaleX = img.clientWidth / img.naturalWidth;
+            const scaleY = img.clientHeight / img.naturalHeight;
+
+            for (const r of regions) {
+                const [x1, y1, x2, y2] = r.bbox;
+                const div = document.createElement('div');
+                div.className = 'bbox-rect';
+                div.dataset.idx = r.idx;
+                div.style.left   = (x1 * scaleX) + 'px';
+                div.style.top    = (y1 * scaleY) + 'px';
+                div.style.width  = ((x2 - x1) * scaleX) + 'px';
+                div.style.height = ((y2 - y1) * scaleY) + 'px';
+                div.addEventListener('click', () => highlightRegion(r.idx));
+                bboxOverlay.appendChild(div);
+            }
+        }
+
+        // --- Bidirectional highlighting ---
+        function highlightRegion(idx) {
+            // Clear previous highlights
+            document.querySelectorAll('.bbox-rect.active').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.region-block.active').forEach(el => el.classList.remove('active'));
+
+            // Highlight bbox on image
+            const bbox = bboxOverlay.querySelector(`.bbox-rect[data-idx="${idx}"]`);
+            if (bbox) bbox.classList.add('active');
+
+            // Highlight text block and scroll into view
+            const block = resultBody.querySelector(`.region-block[data-idx="${idx}"]`);
+            if (block) {
+                block.classList.add('active');
+                block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // If in edit mode, switch to preview to show highlighting
+            if (state.viewMode === 'edit') {
+                state.viewMode = 'preview';
+                updateViewToggleButtons();
+                const ta = resultBody.querySelector('.result-editor');
+                const preview = resultBody.querySelector('.result-preview');
+                if (ta) ta.classList.add('hidden');
+                if (preview) {
+                    preview.classList.remove('hidden');
+                    // Re-highlight after mode switch
+                    const b2 = preview.querySelector(`.region-block[data-idx="${idx}"]`);
+                    if (b2) {
+                        b2.classList.add('active');
+                        b2.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }
+            }
+        }
+        // Make highlightRegion available for inline onclick
+        window.highlightRegion = highlightRegion;
 
         // --- Render markdown/HTML to preview HTML ---
         function renderPreview(text) {
@@ -1072,9 +1284,13 @@
                 ta.classList.remove('hidden');
                 preview.classList.add('hidden');
             } else {
-                // Refresh preview from current textarea content
+                // Refresh preview from current state
                 const page = state.pages.find(p => p.num === state.activePageNum);
-                preview.innerHTML = renderPreview(page ? page.ocr_text || '' : '');
+                if (page && page.ocr_regions && page.ocr_regions.length > 0) {
+                    preview.innerHTML = renderRegionBlocks(page.ocr_regions);
+                } else {
+                    preview.innerHTML = renderPreview(page ? page.ocr_text || '' : '');
+                }
                 ta.classList.add('hidden');
                 preview.classList.remove('hidden');
             }
@@ -1367,13 +1583,14 @@
                 }
 
                 try {
-                    const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}`, { method: 'POST' });
+                    const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
                     if (!res.ok) {
                         const err = await res.json();
                         throw new Error(err.detail || 'OCR failed');
                     }
                     const data = await res.json();
                     page.ocr_text = data.text;
+                    page.ocr_regions = data.regions || [];
                     page.ocr_time = data.time;
 
                     done++;
@@ -1388,7 +1605,8 @@
                     }
 
                     if (state.activePageNum === page.num) {
-                        showEditor(data.text, data.time);
+                        renderBboxOverlay(page.ocr_regions);
+                        showEditor(data.text, data.time, page.ocr_regions);
                     }
                 } catch (e) {
                     done++;

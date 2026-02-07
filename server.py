@@ -14,7 +14,7 @@ import subprocess
 import httpx
 from pathlib import Path
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 import json
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +22,8 @@ import re
 import fitz  # PyMuPDF for PDF processing
 from PIL import Image
 import io
+import torch
+from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 # Setup logging
 LOG_FILE = Path(__file__).parent / "server.log"
@@ -74,11 +76,32 @@ documents: dict[str, dict] = {}
 # Shared httpx client
 _http_client: httpx.AsyncClient | None = None
 
+# Layout detection model (PP-DocLayoutV3)
+_LAYOUT_MODEL_NAME = "PaddlePaddle/PP-DocLayoutV3_safetensors"
+_layout_processor = None
+_layout_model = None
+# Labels to skip (not useful for OCR text mapping)
+_LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number", "footer"}
+_LAYOUT_THRESHOLD = 0.5
+
 
 @app.on_event("startup")
 async def startup_event():
-    global _http_client
+    global _http_client, _layout_processor, _layout_model
     _http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
+
+    # Load layout detection model
+    t0 = time.time()
+    logger.info(f"[layout] Loading {_LAYOUT_MODEL_NAME}...")
+    _layout_processor = AutoImageProcessor.from_pretrained(_LAYOUT_MODEL_NAME)
+    _layout_model = AutoModelForObjectDetection.from_pretrained(_LAYOUT_MODEL_NAME)
+    if torch.cuda.is_available():
+        _layout_model.to("cuda")
+        logger.info(f"[layout] Model loaded on CUDA: {time.time() - t0:.2f}s")
+    else:
+        logger.info(f"[layout] Model loaded on CPU: {time.time() - t0:.2f}s")
+    _layout_model.eval()
+
     # Clean up orphan directories from previous runs
     for child in UPLOAD_DIR.iterdir():
         if child.is_dir() and child.name not in documents:
@@ -106,38 +129,105 @@ async def check_ollama() -> dict:
         return {"online": False, "model_loaded": False, "models": []}
 
 
-# Max image height before splitting (pixels). GLM-OCR vision encoder fails on very tall images.
+# Max image height for single OCR call (fallback when layout detection returns nothing)
 MAX_IMAGE_HEIGHT = 1600
-SEGMENT_OVERLAP = 80  # overlap between segments to avoid cutting mid-line
+SEGMENT_OVERLAP = 80
 
 
-async def ocr_image(image_path: str) -> str:
-    """Run OCR on an image via Ollama API. Auto-splits tall images."""
+def detect_layout(img: Image.Image) -> list[dict]:
+    """Detect document layout regions using PP-DocLayoutV3.
+    Returns [{label, bbox: [x1,y1,x2,y2], score}] sorted by reading order (top-to-bottom).
+    """
+    device = next(_layout_model.parameters()).device
+    inputs = _layout_processor(images=img, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+        outputs = _layout_model(**inputs)
+
+    target_sizes = torch.tensor([img.size[::-1]], device=device)  # (height, width)
+    results = _layout_processor.post_process_object_detection(
+        outputs, target_sizes=target_sizes, threshold=_LAYOUT_THRESHOLD
+    )[0]
+
+    regions = []
+    id2label = _layout_model.config.id2label
+    for score, label_id, box in zip(results["scores"], results["labels"], results["boxes"]):
+        label = id2label[label_id.item()]
+        if label in _LAYOUT_SKIP_LABELS:
+            continue
+        bbox = [round(c) for c in box.tolist()]  # [x1, y1, x2, y2] in pixels
+        regions.append({"label": label, "bbox": bbox, "score": round(score.item(), 3)})
+
+    # Sort by reading order: top-to-bottom, then left-to-right
+    regions.sort(key=lambda r: (r["bbox"][1], r["bbox"][0]))
+
+    logger.info(f"[layout] Detected {len(regions)} regions")
+    return regions
+
+
+async def ocr_image_with_layout(image_path: str) -> tuple[str, list[dict]]:
+    """Run layout detection + per-region OCR.
+    Returns (combined_text, regions_list) where each region has {idx, label, bbox, text}.
+    """
     t0 = time.time()
+    img = Image.open(image_path).convert("RGB")
 
-    img = Image.open(image_path)
+    # Step 1: Layout detection
+    t1 = time.time()
+    raw_regions = detect_layout(img)
+    logger.info(f"[OCR] Layout detection: {time.time() - t1:.2f}s, {len(raw_regions)} regions")
+
+    # Fallback: if no regions detected, OCR the whole image
+    if not raw_regions:
+        logger.info("[OCR] No layout regions, fallback to whole-image OCR")
+        text = await _ocr_whole_image(img)
+        img.close()
+        elapsed = time.time() - t0
+        logger.info(f"[OCR] TOTAL (fallback): {elapsed:.2f}s")
+        return text, []
+
+    # Step 2: Crop and OCR each region
+    regions = []
+    for i, region in enumerate(raw_regions):
+        bbox = region["bbox"]
+        cropped = img.crop(bbox)
+        seg_b64 = _image_to_b64(cropped)
+        text = await _ocr_single(seg_b64)
+        text = _postprocess(text)
+
+        regions.append({
+            "idx": i,
+            "label": region["label"],
+            "bbox": bbox,
+            "text": text or "",
+        })
+        logger.info(f"[OCR] Region {i+1}/{len(raw_regions)} ({region['label']}): {len(text)} chars")
+
+    img.close()
+
+    # Combine all text for backward compatibility
+    combined = "\n\n".join(r["text"] for r in regions if r["text"])
+    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(regions)} regions)")
+    return combined, regions
+
+
+async def _ocr_whole_image(img: Image.Image) -> str:
+    """Fallback: OCR whole image, with splitting for tall images."""
     w, h = img.size
-
     if h > MAX_IMAGE_HEIGHT:
-        logger.info(f"[OCR] Image {w}x{h} exceeds max height, splitting into segments")
         segments = _split_image(img)
-        logger.info(f"[OCR] Split into {len(segments)} segments")
     else:
         segments = [img]
 
     all_text = []
-    for i, seg in enumerate(segments):
+    for seg in segments:
         seg_b64 = _image_to_b64(seg)
         text = await _ocr_single(seg_b64)
         text = _postprocess(text)
         if text:
             all_text.append(text)
-        logger.info(f"[OCR] Segment {i+1}/{len(segments)} done")
-
-    img.close()
-    output = "\n\n".join(all_text)
-    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(segments)} segment(s))")
-    return output
+    return "\n\n".join(all_text)
 
 
 def _split_image(img: Image.Image) -> list[Image.Image]:
@@ -387,6 +477,7 @@ async def upload_files(files: list[UploadFile] = File(...)):
                         "filename": img_name,
                         "image_url": f"/api/images/{doc_id}/{img_name}",
                         "ocr_text": None,
+                        "ocr_regions": None,
                         "ocr_time": None,
                     }
                     documents[doc_id]["pages"].append(page_info)
@@ -429,8 +520,8 @@ async def get_image(doc_id: str, filename: str):
 
 
 @app.post("/api/ocr/{doc_id}/{page_num}")
-async def ocr_single_page(doc_id: str, page_num: int):
-    """Run OCR on a single page"""
+async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)):
+    """Run OCR on a single page. Pass ?layout=false to skip layout detection."""
     if doc_id not in documents:
         raise HTTPException(404, "Document not found")
 
@@ -449,6 +540,7 @@ async def ocr_single_page(doc_id: str, page_num: int):
             "doc_id": doc_id,
             "page_num": page_num,
             "text": page["ocr_text"],
+            "regions": page.get("ocr_regions") or [],
             "time": page["ocr_time"],
             "cached": True,
         }
@@ -459,16 +551,24 @@ async def ocr_single_page(doc_id: str, page_num: int):
 
     try:
         t0 = time.time()
-        text = await ocr_image(str(image_path))
+        if layout:
+            text, regions = await ocr_image_with_layout(str(image_path))
+        else:
+            img = Image.open(str(image_path)).convert("RGB")
+            text = await _ocr_whole_image(img)
+            img.close()
+            regions = []
         elapsed = round(time.time() - t0, 2)
 
         page["ocr_text"] = text
+        page["ocr_regions"] = regions
         page["ocr_time"] = elapsed
 
         return {
             "doc_id": doc_id,
             "page_num": page_num,
             "text": text,
+            "regions": regions,
             "time": elapsed,
             "cached": False,
         }
@@ -482,8 +582,8 @@ async def ocr_single_page(doc_id: str, page_num: int):
 
 
 @app.post("/api/ocr/{doc_id}/all")
-async def ocr_all_pages(doc_id: str):
-    """Run OCR on all pages of a document"""
+async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
+    """Run OCR on all pages of a document. Pass ?layout=false to skip layout detection."""
     if doc_id not in documents:
         raise HTTPException(404, "Document not found")
 
@@ -495,6 +595,7 @@ async def ocr_all_pages(doc_id: str):
             results.append({
                 "page_num": page["num"],
                 "text": page["ocr_text"],
+                "regions": page.get("ocr_regions") or [],
                 "time": page["ocr_time"],
                 "cached": True,
             })
@@ -503,15 +604,23 @@ async def ocr_all_pages(doc_id: str):
         image_path = _safe_doc_path(doc_id, page["filename"])
         try:
             t0 = time.time()
-            text = await ocr_image(str(image_path))
+            if layout:
+                text, regions = await ocr_image_with_layout(str(image_path))
+            else:
+                img = Image.open(str(image_path)).convert("RGB")
+                text = await _ocr_whole_image(img)
+                img.close()
+                regions = []
             elapsed = round(time.time() - t0, 2)
 
             page["ocr_text"] = text
+            page["ocr_regions"] = regions
             page["ocr_time"] = elapsed
 
             results.append({
                 "page_num": page["num"],
                 "text": text,
+                "regions": regions,
                 "time": elapsed,
                 "cached": False,
             })
@@ -520,6 +629,7 @@ async def ocr_all_pages(doc_id: str):
             results.append({
                 "page_num": page["num"],
                 "text": None,
+                "regions": [],
                 "time": None,
                 "error": str(e),
             })

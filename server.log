@@ -1134,3 +1134,276 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-02-07 08:55:35,020 - INFO - [OCR] Segment 1/2 done
 2026-02-07 08:55:35,291 - INFO - [OCR] Segment 2/2 done
 2026-02-07 08:55:35,291 - INFO - [OCR] TOTAL: 2.80s (2 segment(s))
+2026-02-07 08:56:51,969 - INFO - [OCR] Image 1190x1682 exceeds max height, splitting into segments
+2026-02-07 08:56:51,978 - INFO - [OCR] Split into 2 segments
+2026-02-07 08:56:55,232 - INFO - [OCR] Segment 1/2 done
+2026-02-07 08:56:55,482 - INFO - [OCR] Segment 2/2 done
+2026-02-07 08:56:55,482 - INFO - [OCR] TOTAL: 3.51s (2 segment(s))
+2026-02-07 09:06:14,660 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 09:06:14,713 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 09:06:22,777 - INFO - [layout] Model loaded on CUDA: 8.06s
+2026-02-07 09:06:22,778 - INFO - [cleanup] Removing orphan directory: uploads\4ae84457-44d8-469c-8495-c217e9b0ddd1
+2026-02-07 09:06:22,787 - INFO - [cleanup] Removing orphan directory: uploads\6ba9d8dd-70ad-4994-954d-87a1764d91d6
+2026-02-07 09:06:36,777 - INFO - [layout] Detected 11 regions
+2026-02-07 09:06:36,778 - INFO - [OCR] Layout detection: 1.45s, 11 regions
+2026-02-07 09:06:40,667 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:06:42,419 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:06:44,198 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:06:46,284 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:06:48,087 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:06:51,477 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:06:51,690 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> c44a5c1a-2d78-48ed-a672-19e180bb1afe, 71 page(s)
+2026-02-07 09:06:52,448 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:06:52,623 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:06:52,758 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:06:52,928 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:06:53,103 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:06:53,103 - INFO - [OCR] TOTAL: 17.80s (11 regions)
+2026-02-07 09:07:21,714 - INFO - [layout] Detected 12 regions
+2026-02-07 09:07:21,715 - INFO - [OCR] Layout detection: 0.33s, 12 regions
+2026-02-07 09:07:23,320 - INFO - [OCR] Region 1/12 (paragraph_title): 9 chars
+2026-02-07 09:07:23,437 - INFO - [OCR] Region 2/12 (text): 29 chars
+2026-02-07 09:07:23,650 - INFO - [OCR] Region 3/12 (text): 60 chars
+2026-02-07 09:07:23,723 - INFO - [OCR] Region 4/12 (paragraph_title): 10 chars
+2026-02-07 09:07:23,859 - INFO - [OCR] Region 5/12 (text): 35 chars
+2026-02-07 09:07:23,990 - INFO - [OCR] Region 6/12 (text): 32 chars
+2026-02-07 09:07:24,158 - INFO - [OCR] Region 7/12 (text): 38 chars
+2026-02-07 09:07:24,300 - INFO - [OCR] Region 8/12 (text): 36 chars
+2026-02-07 09:07:24,433 - INFO - [OCR] Region 9/12 (text): 35 chars
+2026-02-07 09:07:24,540 - INFO - [OCR] Region 10/12 (paragraph_title): 21 chars
+2026-02-07 09:07:26,077 - INFO - [OCR] Region 11/12 (paragraph_title): 14 chars
+2026-02-07 09:07:26,327 - INFO - [OCR] Region 12/12 (text): 82 chars
+2026-02-07 09:07:26,328 - INFO - [OCR] TOTAL: 4.95s (12 regions)
+2026-02-07 09:07:29,246 - INFO - [layout] Detected 13 regions
+2026-02-07 09:07:29,247 - INFO - [OCR] Layout detection: 0.12s, 13 regions
+2026-02-07 09:07:29,365 - INFO - [OCR] Region 1/13 (paragraph_title): 11 chars
+2026-02-07 09:07:29,740 - INFO - [OCR] Region 2/13 (text): 78 chars
+2026-02-07 09:07:31,440 - INFO - [OCR] Region 3/13 (paragraph_title): 15 chars
+2026-02-07 09:07:31,558 - INFO - [OCR] Region 4/13 (text): 26 chars
+2026-02-07 09:07:31,702 - INFO - [OCR] Region 5/13 (text): 32 chars
+2026-02-07 09:07:31,836 - INFO - [OCR] Region 6/13 (text): 33 chars
+2026-02-07 09:07:33,651 - INFO - [OCR] Region 7/13 (paragraph_title): 18 chars
+2026-02-07 09:07:33,828 - INFO - [OCR] Region 8/13 (text): 45 chars
+2026-02-07 09:07:33,924 - INFO - [OCR] Region 9/13 (paragraph_title): 20 chars
+2026-02-07 09:07:34,014 - INFO - [OCR] Region 10/13 (text): 16 chars
+2026-02-07 09:07:34,124 - INFO - [OCR] Region 11/13 (text): 25 chars
+2026-02-07 09:07:34,250 - INFO - [OCR] Region 12/13 (text): 29 chars
+2026-02-07 09:07:34,452 - INFO - [OCR] Region 13/13 (text): 59 chars
+2026-02-07 09:07:34,452 - INFO - [OCR] TOTAL: 5.33s (13 regions)
+2026-02-07 09:09:20,822 - INFO - [layout] Detected 10 regions
+2026-02-07 09:09:20,823 - INFO - [OCR] Layout detection: 0.22s, 10 regions
+2026-02-07 09:09:21,022 - INFO - [OCR] Region 1/10 (text): 58 chars
+2026-02-07 09:09:21,368 - INFO - [OCR] Region 2/10 (text): 117 chars
+2026-02-07 09:09:21,472 - INFO - [OCR] Region 3/10 (paragraph_title): 19 chars
+2026-02-07 09:09:21,639 - INFO - [OCR] Region 4/10 (text): 40 chars
+2026-02-07 09:09:21,731 - INFO - [OCR] Region 5/10 (paragraph_title): 20 chars
+2026-02-07 09:09:21,828 - INFO - [OCR] Region 6/10 (text): 16 chars
+2026-02-07 09:09:21,927 - INFO - [OCR] Region 7/10 (text): 16 chars
+2026-02-07 09:09:22,052 - INFO - [OCR] Region 8/10 (text): 27 chars
+2026-02-07 09:09:22,159 - INFO - [OCR] Region 9/10 (text): 27 chars
+2026-02-07 09:09:22,263 - INFO - [OCR] Region 10/10 (text): 27 chars
+2026-02-07 09:09:22,263 - INFO - [OCR] TOTAL: 1.66s (10 regions)
+2026-02-07 09:09:23,435 - INFO - [layout] Detected 3 regions
+2026-02-07 09:09:23,436 - INFO - [OCR] Layout detection: 0.05s, 3 regions
+2026-02-07 09:09:23,569 - INFO - [OCR] Region 1/3 (text): 36 chars
+2026-02-07 09:09:23,752 - INFO - [OCR] Region 2/3 (text): 56 chars
+2026-02-07 09:09:23,839 - INFO - [OCR] Region 3/3 (text): 11 chars
+2026-02-07 09:09:23,840 - INFO - [OCR] TOTAL: 0.46s (3 regions)
+2026-02-07 09:09:25,190 - INFO - [layout] Detected 9 regions
+2026-02-07 09:09:25,190 - INFO - [OCR] Layout detection: 0.07s, 9 regions
+2026-02-07 09:09:25,253 - INFO - [OCR] Region 1/9 (paragraph_title): 4 chars
+2026-02-07 09:09:25,417 - INFO - [OCR] Region 2/9 (text): 47 chars
+2026-02-07 09:09:25,671 - INFO - [OCR] Region 3/9 (text): 101 chars
+2026-02-07 09:09:25,824 - INFO - [OCR] Region 4/9 (text): 51 chars
+2026-02-07 09:09:25,963 - INFO - [OCR] Region 5/9 (text): 39 chars
+2026-02-07 09:09:27,700 - INFO - [OCR] Region 6/9 (figure_title): 19 chars
+2026-02-07 09:09:28,271 - INFO - [OCR] Region 7/9 (table): 262 chars
+2026-02-07 09:09:28,361 - INFO - [OCR] Region 8/9 (figure_title): 19 chars
+2026-02-07 09:09:29,557 - INFO - [OCR] Region 9/9 (table): 542 chars
+2026-02-07 09:09:29,558 - INFO - [OCR] TOTAL: 4.46s (9 regions)
+2026-02-07 09:09:51,716 - INFO - [layout] Detected 1 regions
+2026-02-07 09:09:51,716 - INFO - [OCR] Layout detection: 0.17s, 1 regions
+2026-02-07 09:09:55,613 - INFO - [OCR] Region 1/1 (table): 1316 chars
+2026-02-07 09:09:55,613 - INFO - [OCR] TOTAL: 4.08s (1 regions)
+2026-02-07 09:11:33,550 - INFO - [layout] Detected 2 regions
+2026-02-07 09:11:33,553 - INFO - [OCR] Layout detection: 0.51s, 2 regions
+2026-02-07 09:11:33,831 - INFO - [OCR] Region 1/2 (vision_footnote): 2 chars
+2026-02-07 09:11:35,837 - INFO - [OCR] Region 2/2 (table): 631 chars
+2026-02-07 09:11:35,839 - INFO - [OCR] TOTAL: 2.83s (2 regions)
+2026-02-07 09:17:56,443 - INFO - [layout] Detected 11 regions
+2026-02-07 09:17:56,443 - INFO - [OCR] Layout detection: 0.19s, 11 regions
+2026-02-07 09:18:00,465 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:18:02,358 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:18:04,282 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:18:06,471 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:18:08,422 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:18:10,409 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:18:12,407 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> ced16d6b-2064-4d63-aab2-0505fd63a2f1, 71 page(s)
+2026-02-07 09:18:12,410 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:18:12,601 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:18:12,732 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:18:12,901 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:18:13,058 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:18:13,058 - INFO - [OCR] TOTAL: 16.83s (11 regions)
+2026-02-07 09:18:48,113 - INFO - [layout] Detected 12 regions
+2026-02-07 09:18:48,114 - INFO - [OCR] Layout detection: 0.41s, 12 regions
+2026-02-07 09:18:48,195 - INFO - [OCR] Region 1/12 (paragraph_title): 9 chars
+2026-02-07 09:18:48,322 - INFO - [OCR] Region 2/12 (text): 29 chars
+2026-02-07 09:18:48,538 - INFO - [OCR] Region 3/12 (text): 60 chars
+2026-02-07 09:18:48,613 - INFO - [OCR] Region 4/12 (paragraph_title): 10 chars
+2026-02-07 09:18:48,759 - INFO - [OCR] Region 5/12 (text): 35 chars
+2026-02-07 09:18:48,898 - INFO - [OCR] Region 6/12 (text): 32 chars
+2026-02-07 09:18:49,071 - INFO - [OCR] Region 7/12 (text): 38 chars
+2026-02-07 09:18:49,212 - INFO - [OCR] Region 8/12 (text): 36 chars
+2026-02-07 09:18:49,354 - INFO - [OCR] Region 9/12 (text): 35 chars
+2026-02-07 09:18:49,487 - INFO - [OCR] Region 10/12 (paragraph_title): 21 chars
+2026-02-07 09:18:49,586 - INFO - [OCR] Region 11/12 (paragraph_title): 14 chars
+2026-02-07 09:18:49,844 - INFO - [OCR] Region 12/12 (text): 82 chars
+2026-02-07 09:18:49,845 - INFO - [OCR] TOTAL: 2.15s (12 regions)
+2026-02-07 09:20:30,659 - INFO - [layout] Detected 11 regions
+2026-02-07 09:20:30,659 - INFO - [OCR] Layout detection: 0.05s, 11 regions
+2026-02-07 09:20:34,735 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:20:36,435 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:20:38,204 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:20:40,428 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:20:42,149 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:20:43,863 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:20:44,736 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> a98005b7-ebe3-47cd-8e24-d964142e7c14, 71 page(s)
+2026-02-07 09:20:45,239 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:20:45,399 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:20:45,536 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:20:45,694 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:20:45,845 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:20:45,846 - INFO - [OCR] TOTAL: 15.27s (11 regions)
+2026-02-07 09:22:34,175 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 09:22:34,227 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 09:22:34,674 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-02-07 09:22:36,563 - INFO - [layout] Model loaded on CUDA: 2.34s
+2026-02-07 09:22:36,564 - INFO - [cleanup] Removing orphan directory: uploads\a98005b7-ebe3-47cd-8e24-d964142e7c14
+2026-02-07 09:22:36,572 - INFO - [cleanup] Removing orphan directory: uploads\c44a5c1a-2d78-48ed-a672-19e180bb1afe
+2026-02-07 09:22:36,580 - INFO - [cleanup] Removing orphan directory: uploads\ced16d6b-2064-4d63-aab2-0505fd63a2f1
+2026-02-07 09:26:14,576 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 09:26:14,625 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 09:26:16,827 - INFO - [layout] Model loaded on CUDA: 2.20s
+2026-02-07 09:30:53,798 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 516be318-5574-40af-8932-650e2972b812, 71 page(s)
+2026-02-07 09:31:18,532 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> f5121b04-43ec-4a17-adef-2637e4f4c125, 71 page(s)
+2026-02-07 09:32:21,136 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 950a0af2-a9c8-47f6-91be-1607b31f735f, 71 page(s)
+2026-02-07 09:34:22,844 - INFO - === Server starting, log file: D:\mycode\glmocr\server.log ===
+2026-02-07 09:34:22,894 - INFO - [layout] Loading PaddlePaddle/PP-DocLayoutV3_safetensors...
+2026-02-07 09:34:23,523 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-02-07 09:34:25,088 - INFO - [layout] Model loaded on CUDA: 2.19s
+2026-02-07 09:34:25,090 - INFO - [cleanup] Removing orphan directory: uploads\516be318-5574-40af-8932-650e2972b812
+2026-02-07 09:34:25,098 - INFO - [cleanup] Removing orphan directory: uploads\950a0af2-a9c8-47f6-91be-1607b31f735f
+2026-02-07 09:34:25,107 - INFO - [cleanup] Removing orphan directory: uploads\f5121b04-43ec-4a17-adef-2637e4f4c125
+2026-02-07 09:34:54,566 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> d5216686-48d2-4877-9b0d-a5d63c8ce66f, 71 page(s)
+2026-02-07 09:38:25,975 - INFO - [layout] Detected 11 regions
+2026-02-07 09:38:25,975 - INFO - [OCR] Layout detection: 0.55s, 11 regions
+2026-02-07 09:38:28,644 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:38:30,308 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:38:31,987 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:38:33,950 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:38:35,708 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:38:37,511 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:38:39,787 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:38:40,218 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 73c2d5d2-66cb-4a8d-9858-476ec08ba626, 71 page(s)
+2026-02-07 09:38:40,391 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:38:40,508 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:38:40,650 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:38:40,807 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:38:40,807 - INFO - [OCR] TOTAL: 15.40s (11 regions)
+2026-02-07 09:41:15,143 - INFO - [layout] Detected 11 regions
+2026-02-07 09:41:15,143 - INFO - [OCR] Layout detection: 0.22s, 11 regions
+2026-02-07 09:41:16,958 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:41:18,725 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:41:20,495 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:41:22,630 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:41:24,593 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:41:26,391 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:41:28,750 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:41:30,228 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> f5980b46-71de-4f3e-a0e7-7c6cdde754d6, 71 page(s)
+2026-02-07 09:41:30,232 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:41:30,404 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:41:30,624 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:41:30,800 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:41:30,800 - INFO - [OCR] TOTAL: 15.89s (11 regions)
+2026-02-07 09:41:33,486 - INFO - [layout] Detected 12 regions
+2026-02-07 09:41:33,486 - INFO - [OCR] Layout detection: 0.10s, 12 regions
+2026-02-07 09:41:33,608 - INFO - [OCR] Region 1/12 (paragraph_title): 9 chars
+2026-02-07 09:41:33,801 - INFO - [OCR] Region 2/12 (text): 29 chars
+2026-02-07 09:41:34,066 - INFO - [OCR] Region 3/12 (text): 60 chars
+2026-02-07 09:41:34,162 - INFO - [OCR] Region 4/12 (paragraph_title): 10 chars
+2026-02-07 09:41:34,328 - INFO - [OCR] Region 5/12 (text): 35 chars
+2026-02-07 09:41:34,484 - INFO - [OCR] Region 6/12 (text): 32 chars
+2026-02-07 09:41:34,660 - INFO - [OCR] Region 7/12 (text): 38 chars
+2026-02-07 09:41:34,823 - INFO - [OCR] Region 8/12 (text): 36 chars
+2026-02-07 09:41:34,982 - INFO - [OCR] Region 9/12 (text): 35 chars
+2026-02-07 09:41:35,101 - INFO - [OCR] Region 10/12 (paragraph_title): 21 chars
+2026-02-07 09:41:35,213 - INFO - [OCR] Region 11/12 (paragraph_title): 14 chars
+2026-02-07 09:41:35,483 - INFO - [OCR] Region 12/12 (text): 82 chars
+2026-02-07 09:41:35,484 - INFO - [OCR] TOTAL: 2.11s (12 regions)
+2026-02-07 09:41:37,825 - INFO - [layout] Detected 13 regions
+2026-02-07 09:41:37,825 - INFO - [OCR] Layout detection: 0.10s, 13 regions
+2026-02-07 09:41:37,947 - INFO - [OCR] Region 1/13 (paragraph_title): 11 chars
+2026-02-07 09:41:38,291 - INFO - [OCR] Region 2/13 (text): 78 chars
+2026-02-07 09:41:38,416 - INFO - [OCR] Region 3/13 (paragraph_title): 15 chars
+2026-02-07 09:41:38,541 - INFO - [OCR] Region 4/13 (text): 26 chars
+2026-02-07 09:41:38,705 - INFO - [OCR] Region 5/13 (text): 32 chars
+2026-02-07 09:41:38,865 - INFO - [OCR] Region 6/13 (text): 33 chars
+2026-02-07 09:41:38,989 - INFO - [OCR] Region 7/13 (paragraph_title): 18 chars
+2026-02-07 09:41:39,172 - INFO - [OCR] Region 8/13 (text): 45 chars
+2026-02-07 09:41:39,279 - INFO - [OCR] Region 9/13 (paragraph_title): 20 chars
+2026-02-07 09:41:39,380 - INFO - [OCR] Region 10/13 (text): 16 chars
+2026-02-07 09:41:39,494 - INFO - [OCR] Region 11/13 (text): 25 chars
+2026-02-07 09:41:39,623 - INFO - [OCR] Region 12/13 (text): 29 chars
+2026-02-07 09:41:39,833 - INFO - [OCR] Region 13/13 (text): 59 chars
+2026-02-07 09:41:39,833 - INFO - [OCR] TOTAL: 2.11s (13 regions)
+2026-02-07 09:41:40,833 - INFO - [layout] Detected 10 regions
+2026-02-07 09:41:40,833 - INFO - [OCR] Layout detection: 0.06s, 10 regions
+2026-02-07 09:41:41,038 - INFO - [OCR] Region 1/10 (text): 58 chars
+2026-02-07 09:41:41,405 - INFO - [OCR] Region 2/10 (text): 117 chars
+2026-02-07 09:41:41,518 - INFO - [OCR] Region 3/10 (paragraph_title): 19 chars
+2026-02-07 09:41:41,685 - INFO - [OCR] Region 4/10 (text): 40 chars
+2026-02-07 09:41:41,790 - INFO - [OCR] Region 5/10 (paragraph_title): 20 chars
+2026-02-07 09:41:41,884 - INFO - [OCR] Region 6/10 (text): 16 chars
+2026-02-07 09:41:41,984 - INFO - [OCR] Region 7/10 (text): 16 chars
+2026-02-07 09:41:42,114 - INFO - [OCR] Region 8/10 (text): 27 chars
+2026-02-07 09:41:42,237 - INFO - [OCR] Region 9/10 (text): 27 chars
+2026-02-07 09:41:42,352 - INFO - [OCR] Region 10/10 (text): 27 chars
+2026-02-07 09:41:42,353 - INFO - [OCR] TOTAL: 1.59s (10 regions)
+2026-02-07 09:42:02,414 - INFO - [layout] Detected 3 regions
+2026-02-07 09:42:02,414 - INFO - [OCR] Layout detection: 0.27s, 3 regions
+2026-02-07 09:42:02,592 - INFO - [OCR] Region 1/3 (text): 36 chars
+2026-02-07 09:42:02,827 - INFO - [OCR] Region 2/3 (text): 56 chars
+2026-02-07 09:42:02,925 - INFO - [OCR] Region 3/3 (text): 11 chars
+2026-02-07 09:42:02,926 - INFO - [OCR] TOTAL: 0.79s (3 regions)
+2026-02-07 09:42:08,134 - INFO - [layout] Detected 2 regions
+2026-02-07 09:42:08,134 - INFO - [OCR] Layout detection: 0.06s, 2 regions
+2026-02-07 09:42:08,213 - INFO - [OCR] Region 1/2 (vision_footnote): 2 chars
+2026-02-07 09:42:09,940 - INFO - [OCR] Region 2/2 (table): 631 chars
+2026-02-07 09:42:09,940 - INFO - [OCR] TOTAL: 1.89s (2 regions)
+2026-02-07 09:44:35,961 - INFO - [layout] Detected 3 regions
+2026-02-07 09:44:35,961 - INFO - [OCR] Layout detection: 0.35s, 3 regions
+2026-02-07 09:44:37,190 - INFO - [OCR] Region 1/3 (table): 456 chars
+2026-02-07 09:44:37,267 - INFO - [OCR] Region 2/3 (figure_title): 5 chars
+2026-02-07 09:44:38,606 - INFO - [OCR] Region 3/3 (table): 595 chars
+2026-02-07 09:44:38,606 - INFO - [OCR] TOTAL: 3.00s (3 regions)
+2026-02-07 09:45:18,796 - INFO - [layout] Detected 2 regions
+2026-02-07 09:45:18,797 - INFO - [OCR] Layout detection: 0.06s, 2 regions
+2026-02-07 09:45:18,867 - INFO - [OCR] Region 1/2 (vision_footnote): 2 chars
+2026-02-07 09:45:21,280 - INFO - [OCR] Region 2/2 (table): 932 chars
+2026-02-07 09:45:21,280 - INFO - [OCR] TOTAL: 2.55s (2 regions)
+2026-02-07 09:47:01,142 - INFO - [layout] Detected 11 regions
+2026-02-07 09:47:01,143 - INFO - [OCR] Layout detection: 0.20s, 11 regions
+2026-02-07 09:47:03,159 - INFO - [OCR] Region 1/11 (doc_title): 15 chars
+2026-02-07 09:47:04,912 - INFO - [OCR] Region 2/11 (text): 29 chars
+2026-02-07 09:47:06,678 - INFO - [OCR] Region 3/11 (paragraph_title): 11 chars
+2026-02-07 09:47:08,708 - INFO - [OCR] Region 4/11 (text): 81 chars
+2026-02-07 09:47:10,598 - INFO - [OCR] Region 5/11 (text): 37 chars
+2026-02-07 09:47:12,367 - INFO - [OCR] Region 6/11 (paragraph_title): 9 chars
+2026-02-07 09:47:14,427 - INFO - [OCR] Region 7/11 (text): 112 chars
+2026-02-07 09:47:15,821 - INFO - [upload] 2025年中级主管护师大纲（上传）.pdf -> 7f06beb4-d7cd-4669-a9b3-348c2a3849a1, 71 page(s)
+2026-02-07 09:47:15,824 - INFO - [OCR] Region 8/11 (text): 39 chars
+2026-02-07 09:47:16,002 - INFO - [OCR] Region 9/11 (text): 28 chars
+2026-02-07 09:47:16,185 - INFO - [OCR] Region 10/11 (text): 39 chars
+2026-02-07 09:47:16,341 - INFO - [OCR] Region 11/11 (text): 39 chars
+2026-02-07 09:47:16,341 - INFO - [OCR] TOTAL: 15.42s (11 regions)

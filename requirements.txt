@@ -5,3 +5,5 @@ python-multipart
 httpx>=0.25.0
 pymupdf>=1.23.0
 Pillow>=10.0.0
+transformers>=4.40.0
+torch>=2.0.0
