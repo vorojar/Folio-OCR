@@ -70,6 +70,23 @@ body {
     min-width: 0;
 }
 
+.topbar-delete-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.topbar-delete-btn:hover {
+    color: #DC2626;
+    background: rgba(220, 38, 38, 0.15);
+}
+
 .topbar-spacer {
     flex: 1;
 }

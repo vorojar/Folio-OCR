@@ -17,6 +17,7 @@ const state = {
 // --- DOM refs ---
 const $ = id => document.getElementById(id);
 const topFilename = $('topFilename');
+const deleteDocBtn = $('deleteDocBtn');
 const statusDot = $('statusDot');
 const statusText = $('statusText');
 const loadModelBtn = $('loadModelBtn');
@@ -297,6 +298,7 @@ function initDoc(docId, filename) {
     state.pages = [];
     state.activePageNum = null;
     topFilename.textContent = filename;
+    deleteDocBtn.style.display = '';
     pageList.innerHTML = '';
     panelLeft.classList.remove('hidden');
     panelRight.classList.remove('hidden');
@@ -431,13 +433,14 @@ async function selectPage(num) {
 
 // --- Save textarea edits back to state + server ---
 function saveCurrentEditor() {
+    // Always cancel pending debounce first — prevents stale timer from
+    // saving old text to a different document after a fast switch.
+    clearTimeout(_saveTimer);
     const ta = resultBody.querySelector('.result-editor');
     if (ta && state.activePageNum != null) {
         const page = state.pages.find(p => p.num === state.activePageNum);
         if (page) {
             page.ocr_text = ta.value;
-            // Flush any pending debounce and save immediately
-            clearTimeout(_saveTimer);
             if (state.activeDocId) {
                 saveTextToServer(state.activeDocId, state.activePageNum, ta.value);
             }
@@ -585,11 +588,13 @@ function showEditor(text, time, regions) {
     ta.addEventListener('input', () => {
         const page = state.pages.find(p => p.num === state.activePageNum);
         if (page) page.ocr_text = ta.value;
-        // Debounced auto-save to server
+        // Capture current context at input time, not when timer fires
+        const docId = state.activeDocId;
+        const pageNum = state.activePageNum;
         clearTimeout(_saveTimer);
         _saveTimer = setTimeout(() => {
-            if (state.activeDocId && state.activePageNum != null) {
-                saveTextToServer(state.activeDocId, state.activePageNum, ta.value);
+            if (docId && pageNum != null) {
+                saveTextToServer(docId, pageNum, ta.value);
             }
         }, 800);
     });
@@ -1482,6 +1487,7 @@ async function deleteDocument(docId, filename) {
         } else {
             resetViewState();
             topFilename.textContent = 'No document';
+            deleteDocBtn.style.display = 'none';
             panelLeft.classList.add('hidden');
             panelRight.classList.add('hidden');
             resizeHandle.classList.add('hidden');
@@ -1494,6 +1500,13 @@ async function deleteDocument(docId, filename) {
         }
     }
 }
+
+// --- Top-bar delete button ---
+deleteDocBtn.addEventListener('click', () => {
+    if (state.activeDocId) {
+        deleteDocument(state.activeDocId, state.activeDocFilename || 'this document');
+    }
+});
 
 // --- Restore last document on page load ---
 async function restoreLastDocument() {
