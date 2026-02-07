@@ -1,4 +1,5 @@
 # CLAUDE.md
+1、只能用中文回答我
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 

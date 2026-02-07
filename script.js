@@ -11,6 +11,7 @@ const state = {
     ocrAbort: false,
     viewMode: 'edit',
     layoutEnabled: true,
+    docs: [],  // [{doc_id, filename, page_count, ocr_count, created_at}]
 };
 
 // --- DOM refs ---
@@ -52,6 +53,11 @@ const searchInput = $('searchInput');
 const searchInfo = $('searchInfo');
 const searchPrev = $('searchPrev');
 const searchNext = $('searchNext');
+const docListSection = $('docListSection');
+const docListHeader = $('docListHeader');
+const docList = $('docList');
+const docListCount = $('docListCount');
+const docListToggle = $('docListToggle');
 
 // --- Status polling ---
 async function checkStatus() {
@@ -193,10 +199,6 @@ async function uploadFiles(fileList) {
         ocrProgress.style.display = 'none';
     }
 
-    if (state.activeDocId) {
-        try { await fetch(`/api/documents/${state.activeDocId}`, { method: 'DELETE' }); } catch (e) { }
-    }
-
     topFilename.textContent = `Uploading ${label}...`;
     state.activeDocId = null;
     state.activeDocFilename = null;
@@ -245,6 +247,7 @@ function initDoc(docId, filename) {
     copyAllBtn.style.display = '';
     searchWrap.style.display = '';
     clearSearch();
+    updateDocItemActiveState();
 }
 
 function addPage(page) {
@@ -272,8 +275,24 @@ async function handleUploadStream(res) {
 
             if (evt.type === 'init') {
                 initDoc(evt.doc_id, evt.filename);
+                // Add new doc to list at top
+                state.docs.unshift({
+                    doc_id: evt.doc_id,
+                    filename: evt.filename,
+                    page_count: 0,
+                    ocr_count: 0,
+                    created_at: new Date().toISOString(),
+                });
+                renderDocList();
             } else if (evt.type === 'page') {
                 addPage(evt.page);
+                // Update page count in doc list
+                const docEntry = state.docs.find(d => d.doc_id === state.activeDocId);
+                if (docEntry) {
+                    docEntry.page_count = state.pages.length;
+                    if (evt.page.ocr_text != null) docEntry.ocr_count++;
+                    updateDocItemCounts(state.activeDocId, docEntry.page_count, docEntry.ocr_count);
+                }
                 if (state.pages.length === 1) selectPage(1);
             }
         }
@@ -409,6 +428,9 @@ async function runOcrForPage(page) {
             showEditor(data.text, data.time, page.ocr_regions);
         }
 
+        // Update doc list badge
+        updateDocOcrCount();
+
         // Pre-OCR next page in background
         preOcrNext(page.num);
     } catch (e) {
@@ -454,6 +476,9 @@ async function preOcrNext(currentNum) {
             thumbStatus.className = 'page-thumb-status done';
             thumbStatus.textContent = `Done (${data.time}s)`;
         }
+
+        // Update doc list badge
+        updateDocOcrCount();
 
         // If user already navigated to this page while we were pre-OCR'ing, show the result
         if (state.activePageNum === next.num) {
@@ -1031,6 +1056,9 @@ ocrAllBtn.addEventListener('click', async () => {
                 renderBboxOverlay(page.ocr_regions);
                 showEditor(data.text, data.time, page.ocr_regions);
             }
+
+            // Update doc list badge
+            updateDocOcrCount();
         } catch (e) {
             done++;
             ocrProgressBar.style.width = Math.round((done / total) * 100) + '%';
@@ -1235,15 +1263,182 @@ function highlightHtml(html, query) {
     return parts.join('');
 }
 
-// --- Restore last document on page load ---
-async function restoreLastDocument() {
+// --- Document list ---
+
+// Collapse/expand doc list
+docListHeader.addEventListener('click', (e) => {
+    // Don't toggle when clicking the delete button inside a doc item
+    if (e.target.closest('.doc-item-delete')) return;
+    docListSection.classList.toggle('collapsed');
+});
+
+function renderDocList() {
+    docList.innerHTML = '';
+    docListCount.textContent = state.docs.length ? `(${state.docs.length})` : '';
+
+    // Hide doc list + divider when only one document
+    const showList = state.docs.length > 1;
+    docListSection.style.display = showList ? '' : 'none';
+    docListSection.nextElementSibling.style.display = showList ? '' : 'none'; // .panel-divider
+
+    for (const doc of state.docs) {
+        const div = document.createElement('div');
+        div.className = 'doc-item' + (doc.doc_id === state.activeDocId ? ' active' : '');
+        div.dataset.docId = doc.doc_id;
+
+        const badgeText = doc.page_count > 0
+            ? `${doc.ocr_count}/${doc.page_count}`
+            : '';
+
+        div.innerHTML = `
+            <div class="doc-item-info">
+                <div class="doc-item-name" title="${escHtml(doc.filename)}">${escHtml(doc.filename)}</div>
+                <div class="doc-item-meta">
+                    <span>${doc.page_count} page${doc.page_count !== 1 ? 's' : ''}</span>
+                    ${badgeText ? `<span class="doc-item-badge">${badgeText}</span>` : ''}
+                </div>
+            </div>
+            <button class="doc-item-delete" title="Delete">&times;</button>
+        `;
+
+        div.addEventListener('click', (e) => {
+            if (e.target.closest('.doc-item-delete')) return;
+            if (doc.doc_id !== state.activeDocId) switchDocument(doc.doc_id);
+        });
+
+        div.querySelector('.doc-item-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteDocument(doc.doc_id, doc.filename);
+        });
+
+        docList.appendChild(div);
+    }
+}
+
+function updateDocItemActiveState() {
+    docList.querySelectorAll('.doc-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.docId === state.activeDocId);
+    });
+}
+
+function updateDocItemCounts(docId, pageCount, ocrCount) {
+    const docEntry = state.docs.find(d => d.doc_id === docId);
+    if (!docEntry) return;
+    if (pageCount !== undefined) docEntry.page_count = pageCount;
+    if (ocrCount !== undefined) docEntry.ocr_count = ocrCount;
+
+    const el = docList.querySelector(`.doc-item[data-doc-id="${docId}"]`);
+    if (!el) return;
+
+    const meta = el.querySelector('.doc-item-meta');
+    if (meta) {
+        const badgeText = docEntry.page_count > 0
+            ? `${docEntry.ocr_count}/${docEntry.page_count}`
+            : '';
+        meta.innerHTML = `
+            <span>${docEntry.page_count} page${docEntry.page_count !== 1 ? 's' : ''}</span>
+            ${badgeText ? `<span class="doc-item-badge">${badgeText}</span>` : ''}
+        `;
+    }
+}
+
+function updateDocOcrCount() {
+    if (!state.activeDocId) return;
+    const ocrDone = state.pages.filter(p => p.ocr_text != null).length;
+    updateDocItemCounts(state.activeDocId, undefined, ocrDone);
+}
+
+async function fetchDocList() {
     try {
         const res = await fetch('/api/documents');
         if (!res.ok) return;
-        const docs = await res.json();
-        if (!docs.length) return;
+        state.docs = await res.json();
+        renderDocList();
+    } catch (e) {
+        console.warn('fetchDocList failed:', e);
+    }
+}
 
-        const latest = docs[0]; // sorted by created_at DESC
+async function switchDocument(docId) {
+    // Abort running OCR
+    if (state.ocrRunning) {
+        state.ocrAbort = true;
+        state.ocrRunning = false;
+        ocrAllBtn.textContent = 'OCR All Pages';
+        ocrAllBtn.classList.remove('danger');
+        ocrProgress.style.display = 'none';
+    }
+
+    // Save current editor
+    saveCurrentEditor();
+
+    try {
+        const detail = await (await fetch(`/api/documents/${docId}`)).json();
+        initDoc(detail.doc_id, detail.filename);
+        for (const p of detail.pages) addPage(p);
+        if (detail.pages.length) selectPage(detail.pages[0].num);
+    } catch (e) {
+        console.error('switchDocument failed:', e);
+    }
+}
+
+async function deleteDocument(docId, filename) {
+    if (!confirm(`Delete "${filename}"?`)) return;
+
+    try {
+        await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error('Delete failed:', e);
+        return;
+    }
+
+    // Remove from state
+    state.docs = state.docs.filter(d => d.doc_id !== docId);
+    renderDocList();
+
+    if (docId === state.activeDocId) {
+        // Switch to next available doc, or show empty state
+        if (state.docs.length > 0) {
+            await switchDocument(state.docs[0].doc_id);
+        } else {
+            // Reset to empty state
+            state.activeDocId = null;
+            state.activeDocFilename = null;
+            state.pages = [];
+            state.activePageNum = null;
+            topFilename.textContent = 'No document';
+            pageList.innerHTML = '';
+            panelLeft.classList.add('hidden');
+            panelRight.classList.add('hidden');
+            uploadZone.classList.remove('hidden');
+            previewContainer.classList.remove('show');
+            previewImage.src = '';
+            bboxOverlay.innerHTML = '';
+            resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
+            resultTime.style.display = 'none';
+            resultToolbar.style.display = 'none';
+            layoutToggleWrap.style.display = 'none';
+            ocrAllBtn.style.display = 'none';
+            exportWrap.style.display = 'none';
+            copyAllBtn.style.display = 'none';
+            searchWrap.style.display = 'none';
+        }
+    }
+}
+
+// --- Restore last document on page load ---
+async function restoreLastDocument() {
+    try {
+        await fetchDocList();
+
+        if (state.docs.length > 0) {
+            panelLeft.classList.remove('hidden');
+        }
+
+        if (!state.docs.length) return;
+
+        // Load the most recent document
+        const latest = state.docs[0];
         const detail = await (await fetch(`/api/documents/${latest.doc_id}`)).json();
 
         initDoc(detail.doc_id, detail.filename);

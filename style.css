@@ -179,6 +179,158 @@ body {
     flex-shrink: 0;
 }
 
+/* === Document List === */
+.doc-list-section {
+    display: flex;
+    flex-direction: column;
+    max-height: 45%;
+    flex-shrink: 0;
+    transition: max-height 0.2s ease;
+}
+
+.doc-list-section.collapsed {
+    max-height: none;
+    flex-shrink: 0;
+}
+
+.doc-list-section.collapsed .doc-list {
+    display: none;
+}
+
+.doc-list-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.panel-header-spacer {
+    flex: 1;
+}
+
+.doc-list-count {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(45, 45, 45, 0.35);
+}
+
+.doc-list-toggle {
+    background: none;
+    border: none;
+    font-size: 10px;
+    color: rgba(45, 45, 45, 0.35);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.doc-list-toggle:hover {
+    color: var(--charcoal);
+    background: var(--cream);
+}
+
+.doc-list-section.collapsed .doc-list-toggle {
+    transform: rotate(180deg);
+}
+
+.doc-list {
+    overflow-y: auto;
+    padding: 4px 8px;
+}
+
+.doc-item {
+    padding: 6px 8px;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.doc-item:hover {
+    background: var(--cream);
+}
+
+.doc-item.active {
+    background: var(--cream-dark);
+    outline: 2px solid var(--accent);
+}
+
+.doc-item-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.doc-item-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--charcoal);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-item-meta {
+    font-size: 10px;
+    color: rgba(45, 45, 45, 0.4);
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.doc-item-badge {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent-dark);
+    background: var(--cream-dark);
+    padding: 0 5px;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+}
+
+.doc-item-delete {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: rgba(45, 45, 45, 0.25);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.doc-item:hover .doc-item-delete {
+    opacity: 1;
+}
+
+.doc-item-delete:hover {
+    color: #DC2626;
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.panel-divider {
+    height: 1px;
+    background: var(--warm-gray);
+    flex-shrink: 0;
+}
+
+.page-list-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .page-list {
     flex: 1;
     overflow-y: auto;

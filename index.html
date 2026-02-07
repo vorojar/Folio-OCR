@@ -56,10 +56,24 @@
 
     <!-- Main 3-Column Layout -->
     <div class="main">
-        <!-- Left: Page List -->
+        <!-- Left: Doc List + Page List -->
         <div class="panel-left hidden" id="panelLeft">
-            <div class="panel-header">Pages</div>
-            <div class="page-list" id="pageList"></div>
+            <!-- Document list (upper) -->
+            <div class="doc-list-section" id="docListSection">
+                <div class="panel-header doc-list-header" id="docListHeader">
+                    <span>Documents</span>
+                    <span class="doc-list-count" id="docListCount"></span>
+                    <span class="panel-header-spacer"></span>
+                    <button class="doc-list-toggle" id="docListToggle" title="Collapse">&#9650;</button>
+                </div>
+                <div class="doc-list" id="docList"></div>
+            </div>
+            <div class="panel-divider"></div>
+            <!-- Page list (lower) -->
+            <div class="page-list-section">
+                <div class="panel-header">Pages</div>
+                <div class="page-list" id="pageList"></div>
+            </div>
         </div>
 
         <!-- Center: Preview / Upload -->
