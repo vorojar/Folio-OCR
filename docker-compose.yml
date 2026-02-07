@@ -1,0 +1,33 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # 有 NVIDIA GPU 取消下方注释：
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - OLLAMA_BASE=http://ollama:11434
+      - DB_PATH=/app/data/folio_ocr.db
+    volumes:
+      - app_uploads:/app/uploads
+      - app_db:/app/data
+      - hf_cache:/root/.cache/huggingface
+    depends_on:
+      - ollama
+
+volumes:
+  ollama_data:
+  app_uploads:
+  app_db:
+  hf_cache:

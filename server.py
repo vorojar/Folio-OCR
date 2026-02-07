@@ -64,8 +64,8 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Ollama config
-OLLAMA_BASE = "http://localhost:11434"
-OLLAMA_MODEL = "glm-ocr"
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "glm-ocr")
 OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。跳过页眉页脚和页码。"
 
 # LaTeX → Unicode mapping (loaded once at import time)
@@ -79,7 +79,7 @@ _LATEX_FRACTIONS: dict[str, str] = _LATEX_DATA.get("fractions", {})
 _CIRCLED = {str(i): chr(0x2460 + i - 1) for i in range(1, 21)}  # ①-⑳
 
 # --- SQLite persistence ---
-DB_PATH = Path(__file__).parent / "folio_ocr.db"
+DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).parent / "folio_ocr.db"))
 
 
 def _init_db():

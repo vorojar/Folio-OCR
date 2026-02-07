@@ -49,13 +49,45 @@
 - Toast 弹窗通知：保存失败、OCR 超时、加载错误等即时反馈
 - Ollama 断开后 UI 不会冻住，超时后自动恢复可操作状态
 
-## 环境要求
+## 快速开始（Docker 一键部署）
+
+只需装好 [Docker](https://docs.docker.com/get-docker/)，三条命令搞定：
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/vorojar/Folio-OCR.git
+cd Folio-OCR
+
+# 2. 启动服务（首次会自动构建镜像，需要几分钟）
+docker compose up -d
+
+# 3. 下载 OCR 模型（约 2GB，只需执行一次）
+docker compose exec ollama ollama pull glm-ocr
+```
+
+完成后打开浏览器访问 **http://localhost:3000** 即可使用。
+
+> **有 NVIDIA 显卡？** 编辑 `docker-compose.yml`，取消 `deploy:` 段落的注释即可启用 GPU 加速。
+
+常用 Docker 命令：
+
+```bash
+docker compose down          # 停止服务
+docker compose up -d         # 重新启动（数据不会丢失）
+docker compose logs -f app   # 查看应用日志
+docker compose logs -f ollama # 查看 Ollama 日志
+```
+
+---
+
+## 本地部署（不用 Docker）
+
+### 环境要求
 
 - Python 3.10+
 - [Ollama](https://ollama.com/) 已安装且 `ollama` 在 PATH 中
-- 拉取 OCR 模型：`ollama pull glm-ocr`
 
-## 快速开始
+### 安装和启动
 
 ```bash
 # 安装依赖
@@ -80,15 +112,18 @@ start.bat
 
 ```
 glmocr/
-├── server.py           # FastAPI 后端（单文件）
-├── index.html          # HTML 页面
-├── script.js           # 前端逻辑
-├── style.css           # 样式
-├── latex_unicode.json  # LaTeX → Unicode 映射表
-├── requirements.txt    # Python 依赖
-├── start.bat           # Windows 启动脚本
-├── folio_ocr.db        # SQLite 数据库（运行时生成）
-└── uploads/            # 上传文件目录（运行时生成）
+├── server.py            # FastAPI 后端（单文件）
+├── index.html           # HTML 页面
+├── script.js            # 前端逻辑
+├── style.css            # 样式
+├── latex_unicode.json   # LaTeX → Unicode 映射表
+├── requirements.txt     # Python 依赖
+├── Dockerfile           # Docker 镜像构建
+├── docker-compose.yml   # Docker Compose 编排
+├── .dockerignore        # Docker 构建排除列表
+├── start.bat            # Windows 启动脚本
+├── folio_ocr.db         # SQLite 数据库（运行时生成）
+└── uploads/             # 上传文件目录（运行时生成）
 ```
 
 ## API 端点

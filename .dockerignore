@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+venv/
+.git/
+.claude/
+folio_ocr.db
+uploads/
+server.log
+node_modules/
