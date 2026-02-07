@@ -999,6 +999,23 @@
             state.pages.forEach(page => appendPageThumb(page));
         }
 
+        // --- Keyboard navigation (↑/↓ to switch pages) ---
+        document.addEventListener('keydown', (e) => {
+            // Don't intercept when typing in textarea
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+            if (!state.activeDocId || state.pages.length === 0) return;
+
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const idx = state.pages.findIndex(p => p.num === state.activePageNum);
+                if (idx > 0) selectPage(state.pages[idx - 1].num);
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const idx = state.pages.findIndex(p => p.num === state.activePageNum);
+                if (idx < state.pages.length - 1) selectPage(state.pages[idx + 1].num);
+            }
+        });
+
         // --- Select page ---
         async function selectPage(num) {
             // Save current editor content before switching
@@ -1020,6 +1037,7 @@
 
             if (page.ocr_text !== null && page.ocr_text !== undefined) {
                 showEditor(page.ocr_text, page.ocr_time, page.ocr_regions);
+                preOcrNext(num);
             } else {
                 await runOcrForPage(page);
             }
@@ -1066,6 +1084,9 @@
                     renderBboxOverlay(page.ocr_regions);
                     showEditor(data.text, data.time, page.ocr_regions);
                 }
+
+                // Pre-OCR next page in background
+                preOcrNext(page.num);
             } catch (e) {
                 if (thumbStatus) {
                     thumbStatus.className = 'page-thumb-status error';
@@ -1074,6 +1095,51 @@
                 if (state.activePageNum === page.num) {
                     resultBody.innerHTML = `<div class="result-error">OCR failed: ${e.message}</div>`;
                 }
+            }
+        }
+
+        // --- Background pre-OCR for next page ---
+        let _preOcrRunning = false;
+
+        async function preOcrNext(currentNum) {
+            if (_preOcrRunning || state.ocrRunning) return;
+
+            const idx = state.pages.findIndex(p => p.num === currentNum);
+            if (idx < 0 || idx >= state.pages.length - 1) return;
+
+            const next = state.pages[idx + 1];
+            if (next.ocr_text !== null && next.ocr_text !== undefined) return;
+
+            _preOcrRunning = true;
+            const thumbStatus = pageList.querySelector(`.page-thumb[data-num="${next.num}"] .page-thumb-status`);
+            if (thumbStatus) {
+                thumbStatus.className = 'page-thumb-status running';
+                thumbStatus.textContent = 'Pre-OCR...';
+            }
+
+            try {
+                const res = await fetch(`/api/ocr/${state.activeDocId}/${next.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
+                if (!res.ok) throw new Error('Pre-OCR failed');
+                const data = await res.json();
+
+                next.ocr_text = data.text;
+                next.ocr_regions = data.regions || [];
+                next.ocr_time = data.time;
+
+                if (thumbStatus) {
+                    thumbStatus.className = 'page-thumb-status done';
+                    thumbStatus.textContent = `Done (${data.time}s)`;
+                }
+
+                // If user already navigated to this page while we were pre-OCR'ing, show the result
+                if (state.activePageNum === next.num) {
+                    renderBboxOverlay(next.ocr_regions);
+                    showEditor(data.text, data.time, next.ocr_regions);
+                }
+            } catch (e) {
+                // Silent failure for pre-OCR — it will be retried when user navigates there
+            } finally {
+                _preOcrRunning = false;
             }
         }
 
