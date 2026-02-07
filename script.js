@@ -59,6 +59,7 @@ const docList = $('docList');
 const docListCount = $('docListCount');
 const docListToggle = $('docListToggle');
 const resizeHandle = $('resizeHandle');
+const toastContainer = $('toastContainer');
 
 // --- Resize handle (drag to resize right panel) ---
 {
@@ -90,10 +91,33 @@ const resizeHandle = $('resizeHandle');
     }
 }
 
+// --- Fetch with timeout ---
+function fetchT(url, opts = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const existing = opts.signal;
+    if (existing) existing.addEventListener('abort', () => controller.abort());
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: controller.signal })
+        .finally(() => clearTimeout(timer));
+}
+
+// --- Toast notifications ---
+function showToast(message, type = 'error', duration = 3500) {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = message;
+    toastContainer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 300);
+    }, duration);
+}
+
 // --- Status polling ---
 async function checkStatus() {
     try {
-        const res = await fetch('/api/status');
+        const res = await fetchT('/api/status', {}, 5000);
         const data = await res.json();
         state.modelLoaded = data.model_loaded;
         state.layoutModelLoaded = data.layout_loaded;
@@ -147,7 +171,7 @@ async function ensureModelsLoaded() {
         }, 1000);
 
         try {
-            const res = await fetch('/api/load-model', { method: 'POST' });
+            const res = await fetchT('/api/load-model', { method: 'POST' }, 180000);
             if (!res.ok) throw new Error('Load failed');
             const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
             state.layoutModelLoaded = true;
@@ -180,6 +204,31 @@ layoutSwitch.addEventListener('click', () => {
     // Update bbox overlay visibility
     bboxOverlay.style.display = state.layoutEnabled ? '' : 'none';
 });
+
+// --- Stop batch OCR helper ---
+function stopBatchOcr() {
+    state.ocrAbort = true;
+    if (_batchAbortController) _batchAbortController.abort();
+    state.ocrRunning = false;
+    ocrAllBtn.textContent = 'OCR All Pages';
+    ocrAllBtn.classList.remove('danger');
+    ocrProgress.style.display = 'none';
+}
+
+// --- Reset view state ---
+function resetViewState() {
+    state.activeDocId = null;
+    state.activeDocFilename = null;
+    state.pages = [];
+    state.activePageNum = null;
+    pageList.innerHTML = '';
+    previewContainer.classList.remove('show');
+    previewImage.src = '';
+    bboxOverlay.innerHTML = '';
+    resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
+    resultTime.style.display = 'none';
+    resultToolbar.style.display = 'none';
+}
 
 // --- File upload ---
 uploadZone.addEventListener('click', () => fileInput.click());
@@ -221,32 +270,12 @@ async function uploadFiles(fileList) {
     const label = fileList.length === 1 ? fileList[0].name : `${fileList.length} files`;
     for (const f of fileList) formData.append('files', f);
 
-    // Stop any running OCR
-    if (state.ocrRunning) {
-        state.ocrAbort = true;
-        state.ocrRunning = false;
-        ocrAllBtn.textContent = 'OCR All Pages';
-        ocrAllBtn.classList.remove('danger');
-        ocrProgress.style.display = 'none';
-    }
-
+    if (state.ocrRunning) stopBatchOcr();
+    resetViewState();
     topFilename.textContent = `Uploading ${label}...`;
-    state.activeDocId = null;
-    state.activeDocFilename = null;
-    state.pages = [];
-    state.activePageNum = null;
-
-    // Reset all panels to clean state
-    pageList.innerHTML = '';
-    previewContainer.classList.remove('show');
-    previewImage.src = '';
-    bboxOverlay.innerHTML = '';
-    resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
-    resultTime.style.display = 'none';
-    resultToolbar.style.display = 'none';
 
     try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const res = await fetchT('/api/upload', { method: 'POST', body: formData }, 120000);
         if (!res.ok) {
             let msg = 'Upload failed';
             try {
@@ -392,7 +421,7 @@ async function selectPage(num) {
     // Render bbox overlay once image loads (needs natural dimensions)
     previewImage.onload = () => renderBboxOverlay(page.ocr_regions);
 
-    if (page.ocr_text !== null && page.ocr_text !== undefined) {
+    if (page.ocr_text != null) {
         showEditor(page.ocr_text, page.ocr_time, page.ocr_regions);
         preOcrNext(num);
     } else {
@@ -439,7 +468,7 @@ async function runOcrForPage(page) {
     }
 
     try {
-        const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
+        const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, 120000);
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || 'OCR failed');
@@ -466,13 +495,16 @@ async function runOcrForPage(page) {
         // Pre-OCR next page in background
         preOcrNext(page.num);
     } catch (e) {
+        const isTimeout = e.name === 'AbortError';
         if (thumbStatus) {
             thumbStatus.className = 'page-thumb-status error';
-            thumbStatus.textContent = 'Error';
+            thumbStatus.textContent = isTimeout ? 'Timeout' : 'Error';
         }
         if (state.activePageNum === page.num) {
-            resultBody.innerHTML = `<div class="result-error">OCR failed: ${e.message}</div>`;
+            const msg = isTimeout ? 'OCR timed out — retry?' : `OCR failed: ${e.message}`;
+            resultBody.innerHTML = `<div class="result-error">${msg}</div>`;
         }
+        if (isTimeout) showToast('OCR timed out — retry?', 'error');
     }
 }
 
@@ -486,7 +518,7 @@ async function preOcrNext(currentNum) {
     if (idx < 0 || idx >= state.pages.length - 1) return;
 
     const next = state.pages[idx + 1];
-    if (next.ocr_text !== null && next.ocr_text !== undefined) return;
+    if (next.ocr_text != null) return;
 
     _preOcrRunning = true;
     const thumbStatus = pageList.querySelector(`.page-thumb[data-num="${next.num}"] .page-thumb-status`);
@@ -496,7 +528,7 @@ async function preOcrNext(currentNum) {
     }
 
     try {
-        const res = await fetch(`/api/ocr/${state.activeDocId}/${next.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
+        const res = await fetchT(`/api/ocr/${state.activeDocId}/${next.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, 120000);
         if (!res.ok) throw new Error('Pre-OCR failed');
         const data = await res.json();
 
@@ -518,7 +550,11 @@ async function preOcrNext(currentNum) {
             showEditor(data.text, data.time, next.ocr_regions);
         }
     } catch (e) {
-        // Silent failure for pre-OCR — it will be retried when user navigates there
+        // Reset thumbnail status so user sees "Pending" instead of stuck "Pre-OCR..."
+        if (thumbStatus) {
+            thumbStatus.className = 'page-thumb-status';
+            thumbStatus.textContent = 'Pending';
+        }
     } finally {
         _preOcrRunning = false;
     }
@@ -528,11 +564,14 @@ async function preOcrNext(currentNum) {
 let _saveTimer = null;
 
 function saveTextToServer(docId, pageNum, text) {
-    fetch(`/api/pages/${docId}/${pageNum}/text`, {
+    fetchT(`/api/pages/${docId}/${pageNum}/text`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
-    }).catch(e => console.warn('Auto-save failed:', e));
+    }, 10000).catch(e => {
+        console.warn('Auto-save failed:', e);
+        showToast('Auto-save failed', 'warn');
+    });
 }
 
 // --- Show editable textarea + preview ---
@@ -569,7 +608,7 @@ function showEditor(text, time, regions) {
     resultToolbar.style.display = '';
     updateViewToggleButtons();
 
-    if (time !== null && time !== undefined) {
+    if (time != null) {
         resultTime.textContent = time + 's';
         resultTime.style.display = '';
     } else {
@@ -681,8 +720,6 @@ function markdownToHtml(text) {
         if (tableRows.length === 0) return;
         html += '<table>';
         for (let i = 0; i < tableRows.length; i++) {
-            const cells = tableRows[i].split('|').filter(c => c.trim() !== '' || tableRows[i].startsWith('|'));
-            // Clean cells: split by | and trim
             const cleanCells = tableRows[i].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
             // Skip separator row (---, :--:, etc.)
             if (cleanCells.every(c => /^[-:]+$/.test(c))) continue;
@@ -920,6 +957,16 @@ function buildMarkdown() {
     return md.trim();
 }
 
+// --- Download blob helper ---
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 // --- Export dropdown ---
 exportBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -948,19 +995,13 @@ exportMenu.addEventListener('click', async (e) => {
             .find(r => r.label === 'title');
         const docTitle = titleRegion ? titleRegion.text.trim() : null;
         try {
-            const res = await fetch(`/api/export/${state.activeDocId}`, {
+            const res = await fetchT(`/api/export/${state.activeDocId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pages, title: docTitle }),
-            });
+            }, 60000);
             if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`);
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = baseName + '.docx';
-            a.click();
-            URL.revokeObjectURL(url);
+            downloadBlob(await res.blob(), baseName + '.docx');
         } catch (err) {
             console.error('DOCX export failed:', err);
             alert('DOCX export failed: ' + err.message);
@@ -983,12 +1024,7 @@ exportMenu.addEventListener('click', async (e) => {
     }
 
     if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = baseName + ext;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, baseName + ext);
 });
 
 // --- Build plain text ---
@@ -1013,11 +1049,13 @@ function formatEta(seconds) {
 }
 
 // --- OCR all pages with progress ---
+let _batchAbortController = null;
+
 ocrAllBtn.addEventListener('click', async () => {
     if (!state.activeDocId) return;
 
     if (state.ocrRunning) {
-        state.ocrAbort = true;
+        stopBatchOcr();
         return;
     }
 
@@ -1045,7 +1083,7 @@ ocrAllBtn.addEventListener('click', async () => {
 
     for (const page of state.pages) {
         if (state.ocrAbort) break;
-        if (page.ocr_text !== null && page.ocr_text !== undefined) continue;
+        if (page.ocr_text != null) continue;
 
         // Update button text with progress
         const eta = done > 0 ? formatEta((totalTime / done) * (total - done)) : '';
@@ -1062,8 +1100,10 @@ ocrAllBtn.addEventListener('click', async () => {
             resultTime.style.display = 'none';
         }
 
+        _batchAbortController = new AbortController();
+
         try {
-            const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' });
+            const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST', signal: _batchAbortController.signal }, 120000);
             if (!res.ok) {
                 const err = await res.json();
                 throw new Error(err.detail || 'OCR failed');
@@ -1092,19 +1132,31 @@ ocrAllBtn.addEventListener('click', async () => {
             // Update doc list badge
             updateDocOcrCount();
         } catch (e) {
+            // User-initiated stop: break immediately
+            if (state.ocrAbort) {
+                if (thumbStatus) {
+                    thumbStatus.className = 'page-thumb-status';
+                    thumbStatus.textContent = 'Pending';
+                }
+                break;
+            }
+
             done++;
             ocrProgressBar.style.width = Math.round((done / total) * 100) + '%';
 
+            const isTimeout = e.name === 'AbortError';
             if (thumbStatus) {
                 thumbStatus.className = 'page-thumb-status error';
-                thumbStatus.textContent = 'Error';
+                thumbStatus.textContent = isTimeout ? 'Timeout' : 'Error';
             }
             if (state.activePageNum === page.num) {
-                resultBody.innerHTML = `<div class="result-error">OCR failed: ${e.message}</div>`;
+                const msg = isTimeout ? 'OCR timed out' : `OCR failed: ${e.message}`;
+                resultBody.innerHTML = `<div class="result-error">${msg}</div>`;
             }
         }
     }
 
+    _batchAbortController = null;
     state.ocrRunning = false;
     state.ocrAbort = false;
     ocrAllBtn.textContent = 'OCR All Pages';
@@ -1281,9 +1333,7 @@ function refreshSearchHighlight() {
 // Inject <mark> highlights into rendered HTML, only in text nodes (skip tags)
 function highlightHtml(html, query) {
     if (!query) return html;
-    // Split by HTML tags — even parts are text, odd parts are tags
     const parts = html.split(/(<[^>]+>)/g);
-    const lower = query.toLowerCase();
     const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const re = new RegExp(`(${esc})`, 'gi');
     for (let i = 0; i < parts.length; i++) {
@@ -1382,7 +1432,7 @@ function updateDocOcrCount() {
 
 async function fetchDocList() {
     try {
-        const res = await fetch('/api/documents');
+        const res = await fetchT('/api/documents', {}, 10000);
         if (!res.ok) return;
         state.docs = await res.json();
         renderDocList();
@@ -1392,25 +1442,21 @@ async function fetchDocList() {
 }
 
 async function switchDocument(docId) {
-    // Abort running OCR
-    if (state.ocrRunning) {
-        state.ocrAbort = true;
-        state.ocrRunning = false;
-        ocrAllBtn.textContent = 'OCR All Pages';
-        ocrAllBtn.classList.remove('danger');
-        ocrProgress.style.display = 'none';
-    }
+    if (state.ocrRunning) stopBatchOcr();
 
     // Save current editor
     saveCurrentEditor();
 
     try {
-        const detail = await (await fetch(`/api/documents/${docId}`)).json();
+        const res = await fetchT(`/api/documents/${docId}`, {}, 10000);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const detail = await res.json();
         initDoc(detail.doc_id, detail.filename);
         for (const p of detail.pages) addPage(p);
         if (detail.pages.length) selectPage(detail.pages[0].num);
     } catch (e) {
         console.error('switchDocument failed:', e);
+        showToast('Failed to load document', 'error');
     }
 }
 
@@ -1418,9 +1464,10 @@ async function deleteDocument(docId, filename) {
     if (!confirm(`Delete "${filename}"?`)) return;
 
     try {
-        await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+        await fetchT(`/api/documents/${docId}`, { method: 'DELETE' }, 10000);
     } catch (e) {
         console.error('Delete failed:', e);
+        showToast('Delete failed', 'error');
         return;
     }
 
@@ -1433,23 +1480,12 @@ async function deleteDocument(docId, filename) {
         if (state.docs.length > 0) {
             await switchDocument(state.docs[0].doc_id);
         } else {
-            // Reset to empty state
-            state.activeDocId = null;
-            state.activeDocFilename = null;
-            state.pages = [];
-            state.activePageNum = null;
+            resetViewState();
             topFilename.textContent = 'No document';
-            pageList.innerHTML = '';
             panelLeft.classList.add('hidden');
             panelRight.classList.add('hidden');
             resizeHandle.classList.add('hidden');
             uploadZone.classList.remove('hidden');
-            previewContainer.classList.remove('show');
-            previewImage.src = '';
-            bboxOverlay.innerHTML = '';
-            resultBody.innerHTML = '<div class="result-placeholder">Select a page to view OCR result</div>';
-            resultTime.style.display = 'none';
-            resultToolbar.style.display = 'none';
             layoutToggleWrap.style.display = 'none';
             ocrAllBtn.style.display = 'none';
             exportWrap.style.display = 'none';
@@ -1463,16 +1499,14 @@ async function deleteDocument(docId, filename) {
 async function restoreLastDocument() {
     try {
         await fetchDocList();
-
-        if (state.docs.length > 0) {
-            panelLeft.classList.remove('hidden');
-        }
-
         if (!state.docs.length) return;
+        panelLeft.classList.remove('hidden');
 
         // Load the most recent document
         const latest = state.docs[0];
-        const detail = await (await fetch(`/api/documents/${latest.doc_id}`)).json();
+        const res = await fetchT(`/api/documents/${latest.doc_id}`, {}, 10000);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const detail = await res.json();
 
         initDoc(detail.doc_id, detail.filename);
         for (const p of detail.pages) addPage(p);

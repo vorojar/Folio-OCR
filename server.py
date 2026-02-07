@@ -131,7 +131,7 @@ _LAYOUT_MODEL_NAME = "PaddlePaddle/PP-DocLayoutV3_safetensors"
 _layout_processor = None
 _layout_model = None
 # Labels to skip (not useful for OCR text mapping)
-_LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number", "footer"}
+_LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number"}
 # Labels that must be OCR'd individually (not merged with neighbors)
 _LAYOUT_SOLO_LABELS = {"table", "figure"}
 _LAYOUT_THRESHOLD = 0.5
