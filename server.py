@@ -90,6 +90,8 @@ _layout_processor = None
 _layout_model = None
 # Labels to skip (not useful for OCR text mapping)
 _LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number", "footer"}
+# Labels that must be OCR'd individually (not merged with neighbors)
+_LAYOUT_SOLO_LABELS = {"table", "figure"}
 _LAYOUT_THRESHOLD = 0.5
 
 
@@ -174,9 +176,41 @@ def detect_layout(img: Image.Image) -> list[dict]:
     return regions
 
 
+def _merge_adjacent_regions(raw_regions: list[dict]) -> list[list[dict]]:
+    """Group adjacent non-solo regions into merge groups.
+    Returns list of groups, where each group is a list of raw regions.
+    Solo regions (table, figure) always form their own group.
+    """
+    groups: list[list[dict]] = []
+    current: list[dict] = []
+
+    for region in raw_regions:
+        if region["label"] in _LAYOUT_SOLO_LABELS:
+            if current:
+                groups.append(current)
+                current = []
+            groups.append([region])
+        else:
+            current.append(region)
+
+    if current:
+        groups.append(current)
+    return groups
+
+
+def _group_bbox(regions: list[dict]) -> list[int]:
+    """Compute the bounding box that encompasses all regions."""
+    x1 = min(r["bbox"][0] for r in regions)
+    y1 = min(r["bbox"][1] for r in regions)
+    x2 = max(r["bbox"][2] for r in regions)
+    y2 = max(r["bbox"][3] for r in regions)
+    return [x1, y1, x2, y2]
+
+
 async def ocr_image_with_layout(image_path: str) -> tuple[str, list[dict]]:
     """Run layout detection + per-region OCR.
     Returns (combined_text, regions_list) where each region has {idx, label, bbox, text}.
+    Adjacent text regions are merged into one OCR call to reduce latency.
     """
     t0 = time.time()
     img = Image.open(image_path).convert("RGB")
@@ -195,28 +229,32 @@ async def ocr_image_with_layout(image_path: str) -> tuple[str, list[dict]]:
         logger.info(f"[OCR] TOTAL (fallback): {elapsed:.2f}s")
         return text, []
 
-    # Step 2: Crop and OCR each region
+    # Step 2: Merge adjacent text regions, then OCR each group
+    groups = _merge_adjacent_regions(raw_regions)
+    logger.info(f"[OCR] Merged {len(raw_regions)} regions into {len(groups)} groups")
+
     regions = []
-    for i, region in enumerate(raw_regions):
-        bbox = region["bbox"]
+    for gi, group in enumerate(groups):
+        bbox = _group_bbox(group)
         cropped = img.crop(bbox)
         seg_b64 = _image_to_b64(cropped)
         text = await _ocr_single(seg_b64)
         text = _postprocess(text)
 
+        label = group[0]["label"] if len(group) == 1 else "text"
         regions.append({
-            "idx": i,
-            "label": region["label"],
+            "idx": gi,
+            "label": label,
             "bbox": bbox,
             "text": text or "",
         })
-        logger.info(f"[OCR] Region {i+1}/{len(raw_regions)} ({region['label']}): {len(text)} chars")
+        logger.info(f"[OCR] Group {gi+1}/{len(groups)} ({label}, {len(group)} merged): {len(text)} chars")
 
     img.close()
 
     # Combine all text for backward compatibility
     combined = "\n\n".join(r["text"] for r in regions if r["text"])
-    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(regions)} regions)")
+    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(raw_regions)} regions -> {len(groups)} calls)")
     return combined, regions
 
 
