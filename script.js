@@ -44,8 +44,7 @@ const resultBody = $('resultBody');
 const resultTime = $('resultTime');
 const resultToolbar = $('resultToolbar');
 const viewToggle = $('viewToggle');
-const reflowBtn = $('reflowBtn');
-const reflowAllBtn = $('reflowAllBtn');
+const rescanBtn = $('rescanBtn');
 const copyPageBtn = $('copyPageBtn');
 const fileInput = $('fileInput');
 const searchWrap = $('searchWrap');
@@ -811,114 +810,40 @@ function updateViewToggleButtons() {
     });
 }
 
-// --- Paragraph reflow ---
-// Terminal punctuation: line ends here intentionally
-const TERMINAL_RE = /[。！？；…」』）】》!?\]);:：]$/;
-// Lines that should never be merged with the previous line
-const BLOCK_START_RE = /^(#{1,3}\s|[-*+]\s|\d+[.、]\s*|[|｜<]|\s*$)/;
-// Lines that should never be merged with the next line
-const BLOCK_END_RE = /^(#{1,3}\s|[-*+]\s|\d+[.、]\s*|[|｜])/;
-
-function reflowText(text) {
-    if (!text) return text;
-
-    const lines = text.split('\n');
-    const result = [];
-    let i = 0;
-
-    while (i < lines.length) {
-        const line = lines[i];
-        const trimmed = line.trim();
-
-        // Blank line → preserve as paragraph separator
-        if (trimmed === '') {
-            result.push('');
-            i++;
-            continue;
-        }
-
-        // Block-level element (heading, list, table, HTML) → keep as-is
-        if (BLOCK_START_RE.test(trimmed)) {
-            result.push(line);
-            i++;
-            continue;
-        }
-
-        // Start accumulating a paragraph
-        let para = trimmed;
-        i++;
-
-        while (i < lines.length) {
-            const next = lines[i].trim();
-
-            // Stop merging if: blank line, block element, or previous line had terminal punctuation
-            if (next === '' || BLOCK_START_RE.test(next) || TERMINAL_RE.test(para)) {
-                break;
-            }
-
-            // Decide joiner: space for Latin chars at boundary, nothing for CJK
-            const lastChar = para.slice(-1);
-            const firstChar = next.charAt(0);
-            const cjk = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/;
-            const joiner = (cjk.test(lastChar) || cjk.test(firstChar)) ? '' : ' ';
-
-            para += joiner + next;
-            i++;
-        }
-
-        result.push(para);
-    }
-
-    return result.join('\n');
-}
-
-reflowBtn.addEventListener('click', () => {
-    saveCurrentEditor();
+// --- Re-scan current page (force re-OCR ignoring cache) ---
+rescanBtn.addEventListener('click', async () => {
     const page = state.pages.find(p => p.num === state.activePageNum);
-    if (!page || !page.ocr_text) return;
+    if (!page || !state.activeDocId) return;
+    if (state.ocrRunning) return;
 
-    page.ocr_text = reflowText(page.ocr_text);
+    state.ocrRunning = true;
+    rescanBtn.textContent = 'Scanning...';
+    rescanBtn.disabled = true;
 
-    // Update editor/preview
-    const ta = resultBody.querySelector('.result-editor');
-    if (ta) ta.value = page.ocr_text;
-    const preview = resultBody.querySelector('.result-preview');
-    if (preview) preview.innerHTML = renderPreview(page.ocr_text);
+    try {
+        const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?force=true`, { method: 'POST' });
+        if (!res.ok) throw new Error('Re-scan failed');
+        const data = await res.json();
 
-    // Save reflowed text to server
-    if (state.activeDocId) {
-        saveTextToServer(state.activeDocId, page.num, page.ocr_text);
-    }
+        page.ocr_text = data.text;
+        page.ocr_time = data.time;
+        page.ocr_regions = data.regions || [];
 
-    reflowBtn.textContent = 'Done!';
-    setTimeout(() => reflowBtn.textContent = 'Reflow', 1200);
-});
+        showEditor(data.text, data.time, page.ocr_regions);
+        renderBboxOverlay(page.ocr_regions);
 
-reflowAllBtn.addEventListener('click', () => {
-    saveCurrentEditor();
-    let count = 0;
-    for (const page of state.pages) {
-        if (page.ocr_text) {
-            page.ocr_text = reflowText(page.ocr_text);
-            count++;
-            // Save each reflowed page to server
-            if (state.activeDocId) {
-                saveTextToServer(state.activeDocId, page.num, page.ocr_text);
-            }
+        const thumbStatus = document.querySelector(`.page-thumb[data-num="${page.num}"] .thumb-status`);
+        if (thumbStatus) {
+            thumbStatus.textContent = 'Done';
+            thumbStatus.className = 'thumb-status done';
         }
+    } catch (e) {
+        console.error('Re-scan error:', e);
+    } finally {
+        state.ocrRunning = false;
+        rescanBtn.textContent = 'Re-scan';
+        rescanBtn.disabled = false;
     }
-
-    // Refresh current view
-    const page = state.pages.find(p => p.num === state.activePageNum);
-    if (page && page.ocr_text) {
-        const ta = resultBody.querySelector('.result-editor');
-        if (ta) ta.value = page.ocr_text;
-        const preview = resultBody.querySelector('.result-preview');
-        if (preview) preview.innerHTML = renderPreview(page.ocr_text);
-    }
-
-    reflowAllBtn.textContent = `${count} pages`;
-    setTimeout(() => reflowAllBtn.textContent = 'Reflow All', 1500);
 });
 
 // --- Copy current page ---

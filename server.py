@@ -895,8 +895,8 @@ async def get_image(doc_id: str, filename: str):
 
 
 @app.post("/api/ocr/{doc_id}/{page_num}")
-async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)):
-    """Run OCR on a single page. Pass ?layout=false to skip layout detection."""
+async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True), force: bool = Query(False)):
+    """Run OCR on a single page. Pass ?force=true to re-scan ignoring cache."""
     with get_db() as conn:
         page = conn.execute(
             "SELECT * FROM pages WHERE doc_id=? AND num=?", (doc_id, page_num)
@@ -904,8 +904,8 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
     if page is None:
         raise HTTPException(404, f"Page {page_num} not found")
 
-    # If already OCR'd, return cached result
-    if page["ocr_text"] is not None:
+    # If already OCR'd and not forced, return cached result
+    if page["ocr_text"] is not None and not force:
         return {
             "doc_id": doc_id,
             "page_num": page_num,
