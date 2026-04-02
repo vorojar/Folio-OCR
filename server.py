@@ -226,8 +226,77 @@ def detect_layout(img: Image.Image) -> list[dict]:
     # Sort by column-aware reading order
     regions = _sort_by_columns(regions, img.size[0])
 
+    # Fill gaps between full-width bottom and each column's first region
+    regions = _fill_column_gaps(regions, img.size[0])
+
     logger.info(f"[layout] Detected {len(regions)} regions")
     return regions
+
+
+def _fill_column_gaps(regions: list[dict], img_width: int) -> list[dict]:
+    """Insert synthetic regions to cover gaps between the full-width area bottom
+    and each column's first detected region. This catches text the layout model missed
+    (e.g., question options that span across column boundaries).
+    """
+    if not regions:
+        return regions
+
+    # Find full-width bottom edge (column 0)
+    fullwidth_bottom = 0
+    for r in regions:
+        if r.get("_column") == 0:
+            fullwidth_bottom = max(fullwidth_bottom, r["bbox"][3])
+
+    if fullwidth_bottom == 0:
+        return regions
+
+    # Group regions by column
+    col_regions: dict[int, list[dict]] = {}
+    for r in regions:
+        col = r.get("_column")
+        if col is not None and col > 0:
+            col_regions.setdefault(col, []).append(r)
+
+    gap_regions = []
+    MIN_GAP = 15  # only fill gaps larger than this (pixels)
+
+    for col_id, col_regs in col_regions.items():
+        # First region in this column (already sorted by y)
+        first = col_regs[0]
+        first_y = first["bbox"][1]
+
+        if first_y - fullwidth_bottom > MIN_GAP:
+            # There's a gap — insert a synthetic region
+            x1 = min(r["bbox"][0] for r in col_regs)
+            x2 = max(r["bbox"][2] for r in col_regs)
+            gap_bbox = [x1, fullwidth_bottom, x2, first_y]
+            gap_region = {
+                "label": "text",
+                "bbox": gap_bbox,
+                "score": 0.5,
+                "_column": col_id,
+                "_synthetic": True,
+            }
+            gap_regions.append(gap_region)
+            logger.info(f"[layout] Filled gap in column {col_id}: y={fullwidth_bottom}-{first_y}")
+
+    if not gap_regions:
+        return regions
+
+    # Insert gap regions right before each column's first region
+    result = []
+    inserted_cols = set()
+    for r in regions:
+        col = r.get("_column")
+        if col is not None and col > 0 and col not in inserted_cols:
+            # Insert any gap region for this column before its first region
+            for gr in gap_regions:
+                if gr["_column"] == col:
+                    result.append(gr)
+            inserted_cols.add(col)
+        result.append(r)
+
+    return result
 
 
 def _detect_columns(regions: list[dict], img_width: int) -> list[list[dict]]:
@@ -435,18 +504,8 @@ async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[st
         groups = _merge_adjacent_regions(raw_regions)
         logger.info(f"[OCR] Merged {len(raw_regions)} regions into {len(groups)} groups")
 
-        # Find the bottom edge of full-width regions (column 0) to extend column crops upward.
-        # This catches text that the layout model missed between headers and column content.
-        fullwidth_bottom = 0
-        for r in raw_regions:
-            if r.get("_column") == 0:
-                fullwidth_bottom = max(fullwidth_bottom, r["bbox"][3])
-
         for gi, group in enumerate(groups):
             bbox = _group_bbox(group)
-            # Extend column groups upward to fullwidth_bottom to cover undetected gaps
-            if group[0].get("_column", 0) > 0 and fullwidth_bottom > 0:
-                bbox[1] = min(bbox[1], fullwidth_bottom)
             cropped = img.crop(bbox)
             seg_b64 = _image_to_b64(cropped)
             text = await _ocr_single(seg_b64)
