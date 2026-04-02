@@ -241,11 +241,20 @@ def _fill_column_gaps(regions: list[dict], img_width: int) -> list[dict]:
     if not regions:
         return regions
 
-    # Find full-width bottom edge (column 0)
+    # Find full-width bottom edge — only if column 0 is a real full-width group
+    # (has title labels or wide regions), not just a regular left column
+    has_fullwidth = any(
+        r.get("_column") == 0 and (
+            r.get("label") in {"doc_title", "paragraph_title", "title", "section_title"}
+            or (r["bbox"][2] - r["bbox"][0]) > img_width * 0.6
+        )
+        for r in regions
+    )
     fullwidth_bottom = 0
-    for r in regions:
-        if r.get("_column") == 0:
-            fullwidth_bottom = max(fullwidth_bottom, r["bbox"][3])
+    if has_fullwidth:
+        for r in regions:
+            if r.get("_column") == 0:
+                fullwidth_bottom = max(fullwidth_bottom, r["bbox"][3])
 
     if fullwidth_bottom == 0:
         return regions
@@ -319,20 +328,32 @@ def _detect_columns(regions: list[dict], img_width: int) -> list[list[dict]]:
 
     MAX_SUBTITLE_HEIGHT = 50  # centered regions taller than this are text blocks, not subtitles
 
+    # First pass: classify by label and width only
     for r in regions:
         x1, y1, x2, y2 = r["bbox"]
         width = x2 - x1
-        height = y2 - y1
-        cx = (x1 + x2) / 2
-        is_centered = abs(cx - img_center) < img_width * CENTER_TOLERANCE
-        is_single_line = height <= MAX_SUBTITLE_HEIGHT
-
-        if (width > img_width * FULL_WIDTH_RATIO
-                or r["label"] in FULL_WIDTH_LABELS
-                or (is_centered and width < img_width * 0.45 and is_single_line)):
+        if width > img_width * FULL_WIDTH_RATIO or r["label"] in FULL_WIDTH_LABELS:
             full_width.append(r)
         else:
             narrow.append(r)
+
+    # Second pass: only enable centered-subtitle detection if the page has real titles.
+    # This prevents false positives on continuation pages (no headers).
+    has_titles = any(r["label"] in FULL_WIDTH_LABELS for r in full_width)
+    if has_titles:
+        still_narrow = []
+        for r in narrow:
+            x1, y1, x2, y2 = r["bbox"]
+            width = x2 - x1
+            height = y2 - y1
+            cx = (x1 + x2) / 2
+            is_centered = abs(cx - img_center) < img_width * CENTER_TOLERANCE
+            is_single_line = height <= MAX_SUBTITLE_HEIGHT
+            if is_centered and width < img_width * 0.45 and is_single_line:
+                full_width.append(r)
+            else:
+                still_narrow.append(r)
+        narrow = still_narrow
 
     if not narrow:
         return [full_width] if full_width else []
