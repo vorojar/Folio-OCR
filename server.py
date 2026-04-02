@@ -434,6 +434,7 @@ async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[st
     img.close()
 
     combined = "\n\n".join(r["text"] for r in regions if r["text"])
+    combined = _dedup_lines(combined)
     n_calls = len(regions)
     logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(raw_regions)} regions, {n_calls} calls, merge={'on' if merge else 'off'})")
     return combined, regions
@@ -537,23 +538,38 @@ def _remove_duplicate_display_math(text: str) -> str:
 
 
 def _dedup_lines(text: str) -> str:
-    """Remove lines whose content is a duplicate of an adjacent line (after normalization)."""
+    """Remove lines whose normalized content is a substring of any earlier line.
+    Catches GLM-OCR's duplicate display math even when separated by other lines.
+    """
     lines = text.split('\n')
     if len(lines) <= 1:
         return text
 
     result = [lines[0]]
+    # Keep normalized versions of all accepted lines for fast lookup
+    seen_norms = [re.sub(r'\s+', '', lines[0])]
+
     for line in lines[1:]:
-        # Normalize for comparison: strip, remove spaces
-        prev_norm = re.sub(r'\s+', '', result[-1])
         curr_norm = re.sub(r'\s+', '', line)
-        # Skip if current is empty or exact duplicate of previous
-        if curr_norm and curr_norm == prev_norm:
+        if not curr_norm:
+            result.append(line)  # keep blank lines
             continue
-        # Skip if current is a substring of previous (e.g. "15°~20°" within "B. 15°~20°")
-        if curr_norm and len(curr_norm) > 2 and curr_norm in prev_norm:
+
+        # Check if current line is a duplicate/substring of ANY earlier line
+        is_dup = False
+        for prev_norm in seen_norms:
+            if curr_norm == prev_norm:
+                is_dup = True
+                break
+            if len(curr_norm) > 2 and curr_norm in prev_norm:
+                is_dup = True
+                break
+        if is_dup:
             continue
+
         result.append(line)
+        seen_norms.append(curr_norm)
+
     return '\n'.join(result)
 
 
