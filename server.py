@@ -505,8 +505,56 @@ def _postprocess(text: str) -> str:
     """Strip markdown fences and convert LaTeX to Unicode."""
     text = re.sub(r'^```\w*\n?', '', text.strip())
     text = re.sub(r'\n?```$', '', text.strip())
+    # Remove standalone $$...$$ lines whose content duplicates nearby $...$ inline math
+    text = _remove_duplicate_display_math(text)
     text = _latex_to_unicode(text)
+    text = _dedup_lines(text)
     return text.strip()
+
+
+def _remove_duplicate_display_math(text: str) -> str:
+    """Remove $$...$$ display math lines that duplicate $...$ inline math content."""
+    lines = text.split('\n')
+    # Collect all inline math content (normalized)
+    inline_contents = set()
+    for line in lines:
+        for m in re.finditer(r'\$([^$]+)\$', line):
+            # Normalize: strip spaces
+            normalized = re.sub(r'\s+', '', m.group(1))
+            inline_contents.add(normalized)
+
+    # Filter out standalone $$...$$ lines whose content matches an inline math
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        m = re.match(r'^\$\$(.+)\$\$$', stripped)
+        if m:
+            normalized = re.sub(r'\s+', '', m.group(1))
+            if normalized in inline_contents:
+                continue  # skip duplicate display math
+        result.append(line)
+    return '\n'.join(result)
+
+
+def _dedup_lines(text: str) -> str:
+    """Remove lines whose content is a duplicate of an adjacent line (after normalization)."""
+    lines = text.split('\n')
+    if len(lines) <= 1:
+        return text
+
+    result = [lines[0]]
+    for line in lines[1:]:
+        # Normalize for comparison: strip, remove spaces
+        prev_norm = re.sub(r'\s+', '', result[-1])
+        curr_norm = re.sub(r'\s+', '', line)
+        # Skip if current is empty or exact duplicate of previous
+        if curr_norm and curr_norm == prev_norm:
+            continue
+        # Skip if current is a substring of previous (e.g. "15°~20°" within "B. 15°~20°")
+        if curr_norm and len(curr_norm) > 2 and curr_norm in prev_norm:
+            continue
+        result.append(line)
+    return '\n'.join(result)
 
 
 def _latex_to_unicode(text: str) -> str:
