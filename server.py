@@ -613,11 +613,38 @@ def _postprocess(text: str) -> str:
     """Strip markdown fences and convert LaTeX to Unicode."""
     text = re.sub(r'^```\w*\n?', '', text.strip())
     text = re.sub(r'\n?```$', '', text.strip())
+    # Flatten simple HTML tables (only text cells) into plain text lines
+    text = _flatten_simple_tables(text)
     # Remove standalone $$...$$ lines whose content duplicates nearby $...$ inline math
     text = _remove_duplicate_display_math(text)
     text = _latex_to_unicode(text)
     text = _dedup_lines(text)
     return text.strip()
+
+
+def _flatten_simple_tables(text: str) -> str:
+    """Convert simple HTML tables (text-only cells) into plain text.
+    Each row becomes a line with cells joined by spaces.
+    Complex tables (with nested tags, images, etc.) are left as-is.
+    """
+    def _replace_table(m):
+        html = m.group(0)
+        # Reject if it contains nested tables or images
+        if '<table' in html[7:] or '<img' in html.lower():
+            return html
+        parser = _TableParser()
+        parser.feed(html)
+        if not parser.rows:
+            return html
+        lines = []
+        for row in parser.rows:
+            # Filter out empty cells, join with space
+            cells = [c for c in row if c.strip()]
+            if cells:
+                lines.append(" ".join(cells))
+        return "\n".join(lines)
+
+    return re.sub(r'<table[\s\S]*?</table>', _replace_table, text, flags=re.IGNORECASE)
 
 
 def _remove_duplicate_display_math(text: str) -> str:
