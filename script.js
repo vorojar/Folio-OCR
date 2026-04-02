@@ -623,7 +623,7 @@ function showEditor(text, time, regions) {
 
 // --- Render region blocks for preview with bidirectional highlighting ---
 function renderRegionBlocks(regions, searchQuery) {
-    return regions.map(r => {
+    return regions.filter(r => r.text && r.text.trim()).map(r => {
         const rendered = renderPreview(r.text || '', searchQuery);
         return `<div class="region-block" data-idx="${r.idx}" onclick="highlightRegion(${r.idx})">${rendered}</div>`;
     }).join('');

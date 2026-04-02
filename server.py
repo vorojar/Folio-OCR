@@ -370,6 +370,30 @@ def _group_bbox(regions: list[dict]) -> list[int]:
     return [x1, y1, x2, y2]
 
 
+
+def _dedup_regions(regions: list[dict]) -> list[dict]:
+    """Remove regions whose text is entirely contained in another region's text."""
+    if len(regions) <= 1:
+        return regions
+    norms = [re.sub(r'\s+', '', r.get('text', '')) for r in regions]
+    keep = []
+    for i, region in enumerate(regions):
+        if not norms[i]:
+            continue
+        is_dup = False
+        for j, other_norm in enumerate(norms):
+            if i == j or not other_norm:
+                continue
+            if len(norms[i]) < len(other_norm) and norms[i] in other_norm:
+                is_dup = True
+                break
+        if not is_dup:
+            keep.append(region)
+    for i, r in enumerate(keep):
+        r['idx'] = i
+    return keep
+
+
 async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[str, list[dict]]:
     """Run layout detection + OCR.
     merge=True:  adjacent text regions merged into fewer OCR calls (fast, coarse regions).
@@ -433,6 +457,8 @@ async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[st
 
     img.close()
 
+    # Cross-region dedup: remove regions whose text is entirely contained in another region
+    regions = _dedup_regions(regions)
     combined = "\n\n".join(r["text"] for r in regions if r["text"])
     combined = _dedup_lines(combined)
     n_calls = len(regions)
