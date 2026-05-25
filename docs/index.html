@@ -73,8 +73,20 @@ nav {
 .hero-top p {
   font-size: clamp(16px, 2vw, 20px);
   color: rgba(255,255,255,.65);
-  max-width: 600px; margin: 0 auto 40px;
+  max-width: 600px; margin: 0 auto 24px;
 }
+.release-note {
+  display: inline-flex; align-items: center; gap: 8px;
+  max-width: 720px; margin: 0 auto 32px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.78);
+  font-size: 14px;
+}
+.release-note a { color: #fff; font-weight: 600; text-decoration: none; }
+.release-note a:hover { color: var(--accent); }
 .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .hero-bottom {
   background: var(--cream);
@@ -218,6 +230,7 @@ footer a:hover { color: var(--accent-dark); }
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .hero-top { padding-top: 120px; }
+  .release-note { display: flex; text-align: left; }
   .hero-actions { flex-direction: column; align-items: center; }
   .btn-primary, .btn-secondary { width: 100%; max-width: 280px; justify-content: center; }
   .features-grid { grid-template-columns: 1fr; }
@@ -244,6 +257,10 @@ footer a:hover { color: var(--accent-dark); }
 <section class="hero-top">
   <h1>智能文档 <span>OCR</span> 工作台</h1>
   <p>基于 GLM-OCR + Ollama，三栏布局、批量识别、一键导出，专为书籍和文档设计</p>
+  <div class="release-note">
+    v3.3.0 已发布：表格导出保留结构，新增 EPUB，Ollama 加载失败提示更清楚。
+    <a href="https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.0" target="_blank">查看更新</a>
+  </div>
   <div class="hero-actions">
     <a class="btn-primary" href="#deploy">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
@@ -289,7 +306,7 @@ footer a:hover { color: var(--accent-dark); }
     <div class="feature-card">
       <div class="feature-icon">&#128230;</div>
       <h3>多格式导出</h3>
-      <p>支持 .md、.txt、.docx 三种格式，DOCX 基于 python-docx 生成真实 Word 文档</p>
+      <p>支持 .md、.txt、.docx、.epub 四种格式，DOCX 基于 python-docx 生成真实 Word 文档，EPUB 适合电子书阅读</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">&#128190;</div>
@@ -340,6 +357,7 @@ footer a:hover { color: var(--accent-dark); }
     <div class="tech-tag"><span>&#128451;</span> SQLite</div>
     <div class="tech-tag"><span>&#128206;</span> PyMuPDF</div>
     <div class="tech-tag"><span>&#128220;</span> python-docx</div>
+    <div class="tech-tag"><span>&#128214;</span> EPUB</div>
     <div class="tech-tag"><span>&#128051;</span> Docker</div>
   </div>
 </section>

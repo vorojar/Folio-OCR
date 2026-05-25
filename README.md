@@ -2,6 +2,8 @@
 
 基于 [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) + [Ollama](https://ollama.com/) 的三栏文档 OCR 工作台，专为书籍和文档的日常批量识别设计。
 
+> **2026-05-25 · v3.3.0 已发布**：修复表格导出被压成纯文本的问题，新增 EPUB 导出，并改善 Ollama 模型加载失败时的提示。查看 [Release Notes](https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.0)。
+
 ![架构](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square) ![前端](https://img.shields.io/badge/Frontend-Vanilla_JS-F7DF1E?style=flat-square) ![数据库](https://img.shields.io/badge/DB-SQLite-003B57?style=flat-square) [![主页](https://img.shields.io/badge/Homepage-GitHub%20Pages-D4A373?style=flat-square)](https://vorojar.github.io/Folio-OCR/)
 
 ![Folio-OCR 界面截图](demo.png)
