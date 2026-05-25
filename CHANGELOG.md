@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.3.0] - 2026-05-25
+
+### Added
+- 新增 EPUB 导出，支持将多页 OCR 结果打包为标准 `.epub` 文件
+- 新增 `LAYOUT_DEVICE` 环境变量，可选择 `cpu`、`cuda` 或 `auto`
+- README 增加 Ollama `model failed to load` 排查步骤和批量处理建议
+
+### Fixed
+- HTML 表格不再在 OCR 后处理阶段被压平成纯文本，Markdown、DOCX 和 EPUB 导出会保留表格结构
+- TXT 导出单独将 HTML 表格转为制表符分隔文本，避免影响结构化导出
+- Load Model 预热失败时不再误报成功，会返回 Ollama 的具体错误和资源提示
+- 默认让版面分析模型使用 CPU，减少与 Ollama 抢占 GPU 显存导致模型加载失败的概率
+
 ## [3.2.0] - 2026-04-02
 
 ### Added

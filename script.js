@@ -915,26 +915,31 @@ exportMenu.addEventListener('click', async (e) => {
     const fmt = item.dataset.fmt;
     const baseName = (state.activeDocFilename || 'document').replace(/\.[^.]+$/, '');
 
-    if (fmt === 'docx') {
-        // Server-side DOCX generation
+    if (fmt === 'docx' || fmt === 'epub') {
+        // Server-side document generation
         const pages = state.pages.map(p => ({ num: p.num, text: p.ocr_text || '' }));
         if (pages.every(p => !p.text)) return;
-        // Extract title from first page's layout regions (label === "title")
+        // Extract title from first page's layout regions
         const firstPage = state.pages[0];
+        const titleLabels = new Set(['doc_title', 'title', 'section_title', 'paragraph_title']);
         const titleRegion = (firstPage && firstPage.ocr_regions || [])
-            .find(r => r.label === 'title');
+            .find(r => titleLabels.has(r.label));
         const docTitle = titleRegion ? titleRegion.text.trim() : null;
+        const endpoint = fmt === 'docx'
+            ? `/api/export/${state.activeDocId}`
+            : `/api/export/${state.activeDocId}/epub`;
+        const ext = fmt === 'docx' ? '.docx' : '.epub';
         try {
-            const res = await fetchT(`/api/export/${state.activeDocId}`, {
+            const res = await fetchT(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pages, title: docTitle }),
             }, 60000);
             if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`);
-            downloadBlob(await res.blob(), baseName + '.docx');
+            downloadBlob(await res.blob(), baseName + ext);
         } catch (err) {
-            console.error('DOCX export failed:', err);
-            alert('DOCX export failed: ' + err.message);
+            console.error(`${fmt.toUpperCase()} export failed:`, err);
+            alert(`${fmt.toUpperCase()} export failed: ` + err.message);
         }
         return;
     }
@@ -962,12 +967,29 @@ function buildPlainText() {
     const pagesWithText = state.pages.filter(p => p.ocr_text);
     if (pagesWithText.length === 0) return '';
 
-    if (state.pages.length === 1) return state.pages[0].ocr_text || '';
+    if (state.pages.length === 1) return htmlTablesToPlainText(state.pages[0].ocr_text || '');
 
     return state.pages.map(p => {
-        const text = p.ocr_text || '(not recognized)';
+        const text = p.ocr_text ? htmlTablesToPlainText(p.ocr_text) : '(not recognized)';
         return `--- Page ${p.num} ---\n\n${text}`;
     }).join('\n\n\n');
+}
+
+function htmlTablesToPlainText(text) {
+    const parts = text.split(/(<table[\s\S]*?<\/table>)/gi);
+    return parts.map(part => {
+        if (!part.match(/^<table[\s\S]*<\/table>$/i)) return part;
+
+        const doc = new DOMParser().parseFromString(part, 'text/html');
+        const rows = Array.from(doc.querySelectorAll('tr'))
+            .map(row => Array.from(row.querySelectorAll('th,td'))
+                .map(cell => cell.textContent.trim())
+                .filter(Boolean))
+            .filter(cells => cells.length > 0);
+
+        if (rows.length === 0) return part;
+        return rows.map(cells => cells.join('\t')).join('\n');
+    }).join('');
 }
 
 // --- Format time remaining ---

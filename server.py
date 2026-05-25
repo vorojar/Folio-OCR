@@ -12,16 +12,18 @@ import logging
 import shutil
 import subprocess
 import sqlite3
+import zipfile
 from contextlib import contextmanager
 import httpx
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 import json
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import re
+from html import escape as html_escape
 from html.parser import HTMLParser
 from urllib.parse import quote
 import fitz  # PyMuPDF for PDF processing
@@ -48,7 +50,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger.info(f"=== Server starting, log file: {LOG_FILE} ===")
 
-app = FastAPI(title="Folio-OCR Service", version="3.2.0")
+app = FastAPI(title="Folio-OCR Service", version="3.3.0")
 
 # CORS
 app.add_middleware(
@@ -66,7 +68,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Ollama config
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "glm-ocr")
-OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。跳过页眉页脚和页码。"
+OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。表格请保留为Markdown或HTML表格，不要转为纯文本。跳过页眉页脚和页码。"
 
 # LaTeX → Unicode mapping (loaded once at import time)
 _LATEX_MAP_FILE = Path(__file__).parent / "latex_unicode.json"
@@ -135,6 +137,19 @@ _LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number"}
 # Labels that must be OCR'd individually (not merged with neighbors)
 _LAYOUT_SOLO_LABELS = {"table", "figure"}
 _LAYOUT_THRESHOLD = 0.5
+_LAYOUT_DEVICE = os.environ.get("LAYOUT_DEVICE", "cpu").lower()
+if _LAYOUT_DEVICE not in {"cpu", "cuda", "auto"}:
+    raise RuntimeError("LAYOUT_DEVICE must be one of: cpu, cuda, auto")
+
+
+def _select_layout_device(torch_module) -> str:
+    if _LAYOUT_DEVICE == "cpu":
+        return "cpu"
+    if _LAYOUT_DEVICE == "cuda":
+        if not torch_module.cuda.is_available():
+            raise RuntimeError("LAYOUT_DEVICE=cuda but CUDA is not available")
+        return "cuda"
+    return "cuda" if torch_module.cuda.is_available() else "cpu"
 
 
 def _ensure_layout_model():
@@ -148,7 +163,8 @@ def _ensure_layout_model():
     logger.info(f"[layout] Loading {_LAYOUT_MODEL_NAME}...")
     _layout_processor = RTDetrImageProcessor.from_pretrained(_LAYOUT_MODEL_NAME)
     _layout_model = AutoModelForObjectDetection.from_pretrained(_LAYOUT_MODEL_NAME)
-    if torch.cuda.is_available():
+    device = _select_layout_device(torch)
+    if device == "cuda":
         _layout_model.to("cuda")
         logger.info(f"[layout] Model loaded on CUDA: {time.time() - t0:.2f}s")
     else:
@@ -634,38 +650,40 @@ def _postprocess(text: str) -> str:
     """Strip markdown fences and convert LaTeX to Unicode."""
     text = re.sub(r'^```\w*\n?', '', text.strip())
     text = re.sub(r'\n?```$', '', text.strip())
-    # Flatten simple HTML tables (only text cells) into plain text lines
-    text = _flatten_simple_tables(text)
     # Remove standalone $$...$$ lines whose content duplicates nearby $...$ inline math
-    text = _remove_duplicate_display_math(text)
+    text = _preserve_html_tables(text, _remove_duplicate_display_math)
     text = _latex_to_unicode(text)
-    text = _dedup_lines(text)
+    text = _preserve_html_tables(text, _dedup_lines)
     return text.strip()
 
 
-def _flatten_simple_tables(text: str) -> str:
-    """Convert simple HTML tables (text-only cells) into plain text.
-    Each row becomes a line with cells joined by spaces.
-    Complex tables (with nested tags, images, etc.) are left as-is.
-    """
-    def _replace_table(m):
-        html = m.group(0)
-        # Reject if it contains nested tables or images
-        if '<table' in html[7:] or '<img' in html.lower():
-            return html
-        parser = _TableParser()
-        parser.feed(html)
-        if not parser.rows:
-            return html
-        lines = []
-        for row in parser.rows:
-            # Filter out empty cells, join with space
-            cells = [c for c in row if c.strip()]
-            if cells:
-                lines.append(" ".join(cells))
-        return "\n".join(lines)
+def _preserve_html_tables(text: str, transform) -> str:
+    """Apply a text transform outside HTML table blocks only."""
+    parts = re.split(r'(<table[\s\S]*?</table>)', text, flags=re.IGNORECASE)
+    result = []
+    for part in parts:
+        if re.match(r'^<table[\s\S]*</table>$', part, re.IGNORECASE):
+            result.append(part)
+        else:
+            result.append(transform(part))
+    return ''.join(result)
 
-    return re.sub(r'<table[\s\S]*?</table>', _replace_table, text, flags=re.IGNORECASE)
+
+def _ollama_error_text(resp: httpx.Response) -> str:
+    try:
+        data = resp.json()
+        if isinstance(data, dict) and data.get("error"):
+            return str(data["error"])
+    except Exception:
+        pass
+    return resp.text
+
+
+def _ollama_resource_hint(detail: str) -> str:
+    lowered = detail.lower()
+    if "model failed to load" in lowered or "resource" in lowered or "memory" in lowered:
+        return " Check Ollama logs and available RAM/VRAM; Folio-OCR keeps layout detection on CPU by default to leave GPU memory for Ollama."
+    return ""
 
 
 def _remove_duplicate_display_math(text: str) -> str:
@@ -846,6 +864,7 @@ async def status():
         "status": "running",
         "model_loaded": ollama["model_loaded"],
         "layout_loaded": _layout_model is not None,
+        "layout_device": _LAYOUT_DEVICE,
         "device": "ollama",
         "gpu": {"name": f"Ollama ({OLLAMA_MODEL})"} if ollama["online"] else None,
     }
@@ -897,13 +916,19 @@ async def load_model_endpoint():
 
     try:
         t0 = time.time()
-        await _http_client.post(
+        resp = await _http_client.post(
             f"{OLLAMA_BASE}/api/chat",
             json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": "hi"}], "stream": False},
         )
+        resp.raise_for_status()
         logger.info(f"[load_model] Warmup done: {time.time() - t0:.2f}s")
+    except httpx.HTTPStatusError as e:
+        detail = _ollama_error_text(e.response)
+        logger.error(f"[load_model] Ollama warmup failed: {detail}", exc_info=True)
+        raise HTTPException(500, f"Ollama model warmup failed: {detail}.{_ollama_resource_hint(detail)}")
     except Exception as e:
-        logger.warning(f"[load_model] Warmup failed: {e}")
+        logger.error(f"[load_model] Warmup failed: {e}", exc_info=True)
+        raise HTTPException(500, f"Ollama model warmup failed: {e}")
     return {"success": True, "message": "All models loaded"}
 
 
@@ -1068,9 +1093,9 @@ async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True)
             "cached": False,
         }
     except httpx.HTTPStatusError as e:
-        detail = e.response.text
+        detail = _ollama_error_text(e.response)
         logger.error(f"[OCR] Ollama error: {detail}", exc_info=True)
-        raise HTTPException(500, f"OCR failed: {detail}")
+        raise HTTPException(500, f"OCR failed: {detail}.{_ollama_resource_hint(detail)}")
     except Exception as e:
         logger.error(f"[OCR] Error: {e}", exc_info=True)
         raise HTTPException(500, f"OCR failed: {e}")
@@ -1442,6 +1467,166 @@ def _build_docx(title: str, pages: list[_ExportPage]) -> io.BytesIO:
     return buf
 
 
+def _render_epub_inline(text: str) -> str:
+    """Escape inline text and preserve simple markdown emphasis."""
+    escaped = html_escape(text or "")
+    escaped = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', escaped)
+    escaped = re.sub(r'\*(.+?)\*', r'<em>\1</em>', escaped)
+    return escaped
+
+
+def _render_epub_elements(text: str) -> str:
+    elements = _parse_ocr_text(text or "")
+    if not elements:
+        return '<p class="empty">not recognized</p>'
+
+    body = []
+    for elem in elements:
+        if elem["type"] == "heading":
+            level = min(max(elem["level"], 1), 3)
+            body.append(f'<h{level}>{_render_epub_inline(elem["text"])}</h{level}>')
+
+        elif elem["type"] == "paragraph":
+            body.append(f'<p>{_render_epub_inline(elem["text"])}</p>')
+
+        elif elem["type"] == "table":
+            rows = elem["rows"]
+            header_rows = elem.get("header_rows", set())
+            if not rows:
+                continue
+            table = ['<table>']
+            for i, row in enumerate(rows):
+                tag = "th" if i in header_rows else "td"
+                cells = ''.join(f'<{tag}>{_render_epub_inline(cell)}</{tag}>' for cell in row)
+                table.append(f'<tr>{cells}</tr>')
+            table.append('</table>')
+            body.append(''.join(table))
+
+    return '\n'.join(body)
+
+
+def _epub_chapter_xhtml(title: str, page: _ExportPage) -> str:
+    return f'''<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+<head>
+  <title>{html_escape(title)} - Page {page.num}</title>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <section>
+    <h1>Page {page.num}</h1>
+    {_render_epub_elements(page.text)}
+  </section>
+</body>
+</html>
+'''
+
+
+def _build_epub(title: str, pages: list[_ExportPage]) -> io.BytesIO:
+    """Build a simple EPUB 3 file from OCR pages."""
+    book_id = str(uuid.uuid4())
+    modified = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    safe_title = html_escape(title)
+    chapter_items = [
+        (f"page_{page.num:03d}.xhtml", f"page{idx}", page)
+        for idx, page in enumerate(pages, start=1)
+    ]
+
+    manifest_items = [
+        '<item id="nav" properties="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>',
+        '<item id="style" href="style.css" media-type="text/css"/>',
+    ]
+    spine_items = []
+    nav_items = []
+    for href, item_id, page in chapter_items:
+        manifest_items.append(f'<item id="{item_id}" href="{href}" media-type="application/xhtml+xml"/>')
+        spine_items.append(f'<itemref idref="{item_id}"/>')
+        nav_items.append(f'<li><a href="{href}">Page {page.num}</a></li>')
+
+    manifest_xml = "\n    ".join(manifest_items)
+    spine_xml = "\n    ".join(spine_items)
+    nav_xml = "\n      ".join(nav_items)
+
+    content_opf = f'''<?xml version="1.0" encoding="utf-8"?>
+<package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">urn:uuid:{book_id}</dc:identifier>
+    <dc:title>{safe_title}</dc:title>
+    <dc:language>zh-CN</dc:language>
+    <meta property="dcterms:modified">{modified}</meta>
+  </metadata>
+  <manifest>
+    {manifest_xml}
+  </manifest>
+  <spine>
+    {spine_xml}
+  </spine>
+</package>
+'''
+
+    nav_xhtml = f'''<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN" lang="zh-CN">
+<head>
+  <title>{safe_title}</title>
+</head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h1>{safe_title}</h1>
+    <ol>
+      {nav_xml}
+    </ol>
+  </nav>
+</body>
+</html>
+'''
+
+    style_css = '''body {
+  font-family: serif;
+  line-height: 1.6;
+}
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+td, th {
+  border: 1px solid #888;
+  padding: 0.35em;
+  vertical-align: top;
+}
+th {
+  font-weight: bold;
+}
+.empty {
+  color: #777;
+}
+'''
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
+        zf.writestr(
+            "META-INF/container.xml",
+            '''<?xml version="1.0" encoding="utf-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+''',
+        )
+        zf.writestr("OEBPS/content.opf", content_opf)
+        zf.writestr("OEBPS/nav.xhtml", nav_xhtml)
+        zf.writestr("OEBPS/style.css", style_css)
+        for href, _, page in chapter_items:
+            zf.writestr(f"OEBPS/{href}", _epub_chapter_xhtml(title, page))
+
+    buf.seek(0)
+    return buf
+
+
 @app.post("/api/export/{doc_id}")
 async def export_docx(doc_id: str, req: _ExportRequest):
     """Export document as a real DOCX file."""
@@ -1464,6 +1649,33 @@ async def export_docx(doc_id: str, req: _ExportRequest):
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
+        },
+    )
+
+
+@app.post("/api/export/{doc_id}/epub")
+async def export_epub(doc_id: str, req: _ExportRequest):
+    """Export document as an EPUB file."""
+    with get_db() as conn:
+        doc_meta = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+    if doc_meta is None:
+        raise HTTPException(404, "Document not found")
+
+    fallback = (doc_meta["filename"] or "Document").replace(".pdf", "")
+    title = req.title or fallback
+
+    buf = _build_epub(title, req.pages)
+
+    safe_name = f"{title}.epub"
+    encoded_name = quote(safe_name)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/epub+zip",
         headers={
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
         },

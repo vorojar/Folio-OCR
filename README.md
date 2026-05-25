@@ -27,7 +27,7 @@
 - Edit / Preview 双模式切换
 - Preview 模式原生渲染 HTML 表格和 Markdown
 - 段落重排（Reflow）：合并因换行断开的段落
-- 导出三种格式：`.md`（Markdown）、`.txt`（纯文本）、`.docx`（Word）
+- 导出四种格式：`.md`（Markdown）、`.txt`（纯文本）、`.docx`（Word）、`.epub`（电子书）
 - DOCX 导出基于 python-docx，真实 Word 文档，含分节符和页码
 - 单页/全文一键复制
 
@@ -78,6 +78,14 @@ docker compose down          # 停止服务
 docker compose up -d         # 重新启动（数据不会丢失）
 docker compose logs -f app   # 查看应用日志
 docker compose logs -f ollama # 查看 Ollama 日志
+```
+
+默认配置会让版面分析模型跑在 CPU 上，把 GPU 显存优先留给 Ollama。需要调整时可设置：
+
+```bash
+LAYOUT_DEVICE=cpu   # 默认值，最稳妥
+LAYOUT_DEVICE=auto  # 有 CUDA 时自动把版面分析模型放到 GPU
+LAYOUT_DEVICE=cuda  # 强制使用 CUDA，不可用时启动失败
 ```
 
 ---
@@ -148,6 +156,29 @@ glmocr/
 - 模型冷启动首次请求：~50s
 - 后续单页识别：~0.5s
 - PDF 以 2x 缩放矩阵渲染，保证 OCR 质量
+
+## 常见问题
+
+### Ollama 报 `model failed to load`
+
+这通常是 Ollama 侧模型没有成功加载，常见原因是模型未拉取、内存/显存不足，或 GPU 资源被其他进程占用。
+
+排查顺序：
+
+```bash
+docker compose exec ollama ollama pull glm-ocr
+docker compose logs -f ollama
+```
+
+如果本地源码运行时遇到显存紧张，保持默认的 `LAYOUT_DEVICE=cpu`，让版面分析模型使用 CPU，把 GPU 留给 Ollama。若已经设置过 `LAYOUT_DEVICE=auto` 或 `LAYOUT_DEVICE=cuda`，可以改回：
+
+```bash
+LAYOUT_DEVICE=cpu python server.py
+```
+
+### 单次最多能处理多少张图片？
+
+Folio-OCR 没有写死单次页数上限；上传的图片和 PDF 页会按顺序写入 SQLite 和 `uploads/`，OCR 也是逐页执行。实际上限主要取决于磁盘空间、浏览器页面数量和 Ollama 的稳定性。大文档建议先按 20-50 页一批处理，确认环境稳定后再扩大批量。
 
 ## License
 
