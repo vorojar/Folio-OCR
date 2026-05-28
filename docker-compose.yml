@@ -20,6 +20,7 @@ services:
       - OLLAMA_BASE=http://ollama:11434
       - DB_PATH=/app/data/folio_ocr.db
       - LAYOUT_DEVICE=cpu
+      - OLLAMA_NUM_CTX=16384
     volumes:
       - app_uploads:/app/uploads
       - app_db:/app/data

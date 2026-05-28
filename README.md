@@ -2,7 +2,7 @@
 
 基于 [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) + [Ollama](https://ollama.com/) 的三栏文档 OCR 工作台，专为书籍和文档的日常批量识别设计。
 
-> **2026-05-25 · v3.3.0 已发布**：修复表格导出被压成纯文本的问题，新增 EPUB 导出，并改善 Ollama 模型加载失败时的提示。查看 [Release Notes](https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.0)。
+> **2026-05-28 · v3.3.1 已发布**：默认增大 Ollama OCR 请求上下文，规避 GLM-OCR 的 `GGML_ASSERT` 崩溃；v3.3.0 已修复表格导出并新增 EPUB。查看 [Release Notes](https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.1)。
 
 ![架构](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square) ![前端](https://img.shields.io/badge/Frontend-Vanilla_JS-F7DF1E?style=flat-square) ![数据库](https://img.shields.io/badge/DB-SQLite-003B57?style=flat-square) [![主页](https://img.shields.io/badge/Homepage-GitHub%20Pages-D4A373?style=flat-square)](https://vorojar.github.io/Folio-OCR/)
 
@@ -90,6 +90,8 @@ LAYOUT_DEVICE=auto  # 有 CUDA 时自动把版面分析模型放到 GPU
 LAYOUT_DEVICE=cuda  # 强制使用 CUDA，不可用时启动失败
 ```
 
+Folio-OCR 默认会给 Ollama 请求传入 `OLLAMA_NUM_CTX=16384`，避免 GLM-OCR 处理图片时因上下文太小触发底层 RoPE / KV cache 错误。内存非常紧张时可以调小，复杂图片或高分辨率扫描件建议保持默认或调大。
+
 ---
 
 ## 本地部署（不用 Docker）
@@ -176,6 +178,24 @@ docker compose logs -f ollama
 
 ```bash
 LAYOUT_DEVICE=cpu python server.py
+```
+
+### Ollama 报 `GGML_ASSERT(a->ne[2] * 4 == b->ne[0]) failed`
+
+这是 GLM-OCR / Ollama 在图片 OCR 时可能触发的底层上下文错误。Folio-OCR 从 v3.3.1 起默认给 `/api/chat` 请求设置：
+
+```json
+{
+  "options": {
+    "num_ctx": 16384
+  }
+}
+```
+
+如果仍然复现，可以尝试调大上下文或降低输入图片分辨率：
+
+```bash
+OLLAMA_NUM_CTX=24576 python server.py
 ```
 
 ### 单次最多能处理多少张图片？

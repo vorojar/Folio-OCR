@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.1] - 2026-05-28
+
+### Fixed
+- Ollama `/api/chat` 请求默认传入 `options.num_ctx=16384`，规避 GLM-OCR 在图片 OCR 时因上下文过小触发 `GGML_ASSERT(a->ne[2] * 4 == b->ne[0]) failed`
+- 新增 `OLLAMA_NUM_CTX` 环境变量，可按机器内存和图片复杂度调整上下文大小
+
 ## [3.3.0] - 2026-05-25
 
 ### Added

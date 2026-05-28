@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger.info(f"=== Server starting, log file: {LOG_FILE} ===")
 
-app = FastAPI(title="Folio-OCR Service", version="3.3.0")
+app = FastAPI(title="Folio-OCR Service", version="3.3.1")
 
 # CORS
 app.add_middleware(
@@ -68,6 +68,9 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Ollama config
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "glm-ocr")
+OLLAMA_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "16384"))
+if OLLAMA_NUM_CTX <= 0:
+    raise RuntimeError("OLLAMA_NUM_CTX must be a positive integer")
 OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。表格请保留为Markdown或HTML表格，不要转为纯文本。跳过页眉页脚和页码。"
 
 # LaTeX → Unicode mapping (loaded once at import time)
@@ -629,21 +632,28 @@ async def _ocr_single(image_b64: str) -> str:
     """Send a single image to Ollama for OCR."""
     resp = await _http_client.post(
         f"{OLLAMA_BASE}/api/chat",
-        json={
-            "model": OLLAMA_MODEL,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": OCR_PROMPT,
-                    "images": [image_b64],
-                }
-            ],
-            "stream": False,
-        },
+        json=_ollama_chat_payload(OCR_PROMPT, image_b64),
     )
     resp.raise_for_status()
     result = resp.json()
     return result.get("message", {}).get("content", "")
+
+
+def _ollama_chat_payload(content: str, image_b64: str | None = None) -> dict:
+    message = {
+        "role": "user",
+        "content": content,
+    }
+    if image_b64 is not None:
+        message["images"] = [image_b64]
+    return {
+        "model": OLLAMA_MODEL,
+        "messages": [message],
+        "stream": False,
+        "options": {
+            "num_ctx": OLLAMA_NUM_CTX,
+        },
+    }
 
 
 def _postprocess(text: str) -> str:
@@ -865,6 +875,7 @@ async def status():
         "model_loaded": ollama["model_loaded"],
         "layout_loaded": _layout_model is not None,
         "layout_device": _LAYOUT_DEVICE,
+        "ollama_num_ctx": OLLAMA_NUM_CTX,
         "device": "ollama",
         "gpu": {"name": f"Ollama ({OLLAMA_MODEL})"} if ollama["online"] else None,
     }
@@ -918,7 +929,7 @@ async def load_model_endpoint():
         t0 = time.time()
         resp = await _http_client.post(
             f"{OLLAMA_BASE}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": "hi"}], "stream": False},
+            json=_ollama_chat_payload("hi"),
         )
         resp.raise_for_status()
         logger.info(f"[load_model] Warmup done: {time.time() - t0:.2f}s")

@@ -20,6 +20,7 @@ def load_server_helpers():
     tree = ast.parse(source)
     wanted_functions = {
         "_postprocess",
+        "_ollama_chat_payload",
         "_preserve_html_tables",
         "_remove_duplicate_display_math",
         "_dedup_lines",
@@ -51,6 +52,8 @@ def load_server_helpers():
         "_LATEX_SIMPLE": sorted(latex_data["simple"].items(), key=lambda x: -len(x[0])),
         "_LATEX_FRACTIONS": latex_data.get("fractions", {}),
         "_CIRCLED": {str(i): chr(0x2460 + i - 1) for i in range(1, 21)},
+        "OLLAMA_MODEL": "glm-ocr",
+        "OLLAMA_NUM_CTX": 16384,
         "datetime": datetime,
         "timezone": timezone,
         "html_escape": html_escape,
@@ -95,6 +98,20 @@ $$x$$
         self.assertNotIn("$$x$$", result)
         self.assertEqual(result.count("<tr>"), 2)
         self.assertEqual(result.count("<td>同名</td>"), 2)
+
+
+class OllamaPayloadTests(unittest.TestCase):
+    def setUp(self):
+        self.helpers = load_server_helpers()
+
+    def test_chat_payload_sets_num_ctx_for_image_ocr(self):
+        payload = self.helpers["_ollama_chat_payload"]("OCR", "abc123")
+
+        self.assertEqual(payload["model"], "glm-ocr")
+        self.assertFalse(payload["stream"])
+        self.assertEqual(payload["options"]["num_ctx"], 16384)
+        self.assertEqual(payload["messages"][0]["content"], "OCR")
+        self.assertEqual(payload["messages"][0]["images"], ["abc123"])
 
 
 class EpubExportTests(unittest.TestCase):
