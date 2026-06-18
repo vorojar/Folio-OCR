@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folio-OCR Demo — 扫描页到可编辑文档</title>
+<link rel="icon" href="data:,">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #F9F7F5;
+  --cream-dark: #F0EDE8;
+  --paper: #FFFDFC;
+  --warm-gray: #E8E4DE;
+  --line: #D8D1C8;
+  --charcoal: #2D2D2D;
+  --ink: #3A3835;
+  --muted: rgba(45,45,45,.58);
+  --accent: #D4A373;
+  --accent-dark: #B8956A;
+  --green: #5A8B67;
+  --radius: 8px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: var(--ink);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, a { font: inherit; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 clamp(18px, 4vw, 48px);
+  background: var(--charcoal);
+  box-shadow: 0 2px 20px rgba(0,0,0,.14);
+}
+
+.brand {
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar-spacer { flex: 1; }
+
+.topbar-link {
+  color: rgba(255,255,255,.7);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+}
+
+.topbar-link:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+.topbar-link.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #fff;
+  background: var(--accent);
+  padding: 8px 16px;
+}
+
+.topbar-link.primary:hover { background: var(--accent-dark); }
+
+.hero {
+  padding: 72px clamp(18px, 4vw, 48px) 34px;
+  background: var(--charcoal);
+  color: #fff;
+}
+
+.hero-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, .86fr) minmax(320px, 1fr);
+  gap: 36px;
+  align-items: end;
+}
+
+.hero h1 {
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 1.05;
+  letter-spacing: 0;
+  margin-bottom: 18px;
+}
+
+.hero h1 span { color: var(--accent); }
+
+.hero p {
+  max-width: 620px;
+  color: rgba(255,255,255,.68);
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.65;
+}
+
+.command {
+  margin-top: 24px;
+  max-width: 660px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: var(--radius);
+  background: rgba(0,0,0,.28);
+  padding: 15px 17px;
+  overflow-x: auto;
+}
+
+.command code {
+  color: rgba(255,255,255,.9);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hero-proof {
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+}
+
+.hero-proof-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  color: rgba(255,255,255,.5);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  font-size: 13px;
+}
+
+.dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.3); }
+.dot:nth-child(1) { background: #D66D62; }
+.dot:nth-child(2) { background: #DCA84A; }
+.dot:nth-child(3) { background: #77A36D; }
+
+.mini-flow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(255,255,255,.1);
+}
+
+.mini-panel {
+  min-height: 220px;
+  padding: 18px;
+  background: rgba(34,34,34,.95);
+}
+
+.mini-paper {
+  height: 180px;
+  border-radius: 6px;
+  background: #F8F4EE;
+  padding: 20px 18px;
+}
+
+.mini-line { height: 8px; border-radius: 5px; background: rgba(45,45,45,.18); margin-bottom: 12px; }
+.mini-line.short { width: 42%; }
+.mini-line.mid { width: 64%; }
+.mini-line.long { width: 90%; }
+
+.mini-output {
+  color: rgba(255,255,255,.78);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.workspace {
+  padding: 34px clamp(18px, 4vw, 48px) 80px;
+}
+
+.toolbar {
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.sample-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-btn,
+.run-btn,
+.export-btn {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 650;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.tab-btn:hover,
+.export-btn:hover { border-color: var(--accent); }
+
+.tab-btn.active {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+  color: #fff;
+}
+
+.run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(212,163,115,.28);
+}
+
+.run-btn:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.demo-grid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 34px rgba(45,45,45,.06);
+}
+
+.panel-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--warm-gray);
+  background: #FBFAF8;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 750;
+  color: rgba(45,45,45,.78);
+}
+
+.status-pill {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(90,139,103,.1);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.source-stage {
+  position: relative;
+  min-height: 620px;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  background: var(--cream-dark);
+}
+
+.scan-page {
+  position: relative;
+  width: min(100%, 430px);
+  min-height: 570px;
+  padding: 42px 38px;
+  border-radius: 4px;
+  background: var(--paper);
+  box-shadow: 0 18px 60px rgba(45,45,45,.16);
+  overflow: hidden;
+}
+
+.scan-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0 44%, rgba(45,45,45,.025) 44% 56%, transparent 56%),
+    radial-gradient(circle at 20% 18%, rgba(45,45,45,.05), transparent 22%),
+    radial-gradient(circle at 84% 68%, rgba(45,45,45,.05), transparent 26%);
+  pointer-events: none;
+}
+
+.doc-title {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(45,45,45,.74);
+  margin-bottom: 24px;
+}
+
+.scan-text {
+  position: relative;
+  z-index: 1;
+  color: rgba(45,45,45,.65);
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 15px;
+  line-height: 1.92;
+}
+
+.scan-text p { margin-bottom: 14px; }
+
+.scan-table {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid rgba(45,45,45,.28);
+  margin-top: 20px;
+}
+
+.scan-cell {
+  min-height: 34px;
+  border-right: 1px solid rgba(45,45,45,.22);
+  border-bottom: 1px solid rgba(45,45,45,.22);
+  padding: 7px;
+  font-size: 12px;
+  color: rgba(45,45,45,.58);
+}
+
+.scan-cell:nth-child(3n) { border-right: 0; }
+.scan-cell:nth-last-child(-n+3) { border-bottom: 0; }
+
+.region {
+  position: absolute;
+  border: 2px solid rgba(212,163,115,.9);
+  border-radius: 5px;
+  background: rgba(212,163,115,.12);
+  opacity: 0;
+  transform: scale(.98);
+}
+
+.demo-running .region {
+  animation: revealRegion .55s ease forwards;
+}
+
+.region.r1 { left: 28px; top: 30px; right: 28px; height: 52px; animation-delay: .15s; }
+.region.r2 { left: 34px; top: 112px; right: 34px; height: 158px; animation-delay: .45s; }
+.region.r3 { left: 34px; top: 294px; right: 34px; height: 132px; animation-delay: .75s; }
+.region.r4 { left: 34px; top: 452px; right: 34px; height: 78px; animation-delay: 1.05s; }
+
+@keyframes revealRegion {
+  to { opacity: 1; transform: scale(1); }
+}
+
+.scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -90px;
+  height: 90px;
+  background: linear-gradient(to bottom, transparent, rgba(212,163,115,.2), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.demo-running .scan-beam {
+  opacity: 1;
+  animation: scanBeam 1.5s ease-in-out forwards;
+}
+
+@keyframes scanBeam {
+  to { transform: translateY(720px); opacity: 0; }
+}
+
+.result-body {
+  min-height: 620px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #fff;
+}
+
+.progress-wrap {
+  padding: 16px;
+  border-bottom: 1px solid var(--warm-gray);
+}
+
+.progress-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cream-dark);
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: var(--progress, 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .25s ease;
+}
+
+.ocr-output {
+  padding: 20px 22px 26px;
+  overflow: auto;
+}
+
+.ocr-output pre {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.78;
+  color: rgba(45,45,45,.82);
+  white-space: pre-wrap;
+}
+
+.export-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--warm-gray);
+  background: #FBFAF8;
+}
+
+.export-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 11px 10px;
+  background: #fff;
+  text-align: center;
+}
+
+.export-card strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.export-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notes {
+  max-width: 1180px;
+  margin: 18px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.note {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.74);
+  padding: 16px;
+}
+
+.note h3 {
+  font-size: 15px;
+  margin-bottom: 7px;
+}
+
+.note p {
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.actions {
+  max-width: 1180px;
+  margin: 22px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.export-btn.primary {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+  color: #fff;
+}
+
+.export-btn.primary:hover { background: #1f1f1f; }
+
+@media (max-width: 860px) {
+  .hero-inner,
+  .demo-grid,
+  .notes {
+    grid-template-columns: 1fr;
+  }
+
+  .hero { padding-top: 46px; }
+  .hero-proof { display: none; }
+  .source-stage, .result-body { min-height: auto; }
+  .scan-page { min-height: 500px; }
+  .export-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .topbar { padding: 0 14px; gap: 8px; }
+  .topbar-link:not(.primary) { display: none; }
+  .topbar-link.primary { padding: 8px 12px; }
+  .hero { padding-left: 16px; padding-right: 16px; }
+  .command code { font-size: 12px; }
+  .workspace { padding: 26px 14px 60px; }
+  .toolbar { align-items: stretch; }
+  .toolbar-title { width: 100%; }
+  .sample-tabs { width: 100%; }
+  .tab-btn { flex: 1 1 100px; }
+  .run-btn { width: 100%; justify-content: center; }
+  .source-stage { padding: 14px; }
+  .scan-page { padding: 30px 24px; }
+  .doc-title { font-size: 19px; }
+  .scan-text { font-size: 14px; }
+  .ocr-output pre { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./">Folio-OCR</a>
+  <a class="topbar-link" href="./">首页</a>
+  <a class="topbar-link" href="https://github.com/vorojar/Folio-OCR#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B" target="_blank" rel="noopener">安装</a>
+  <span class="topbar-spacer"></span>
+  <a class="topbar-link primary" href="https://github.com/vorojar/Folio-OCR" target="_blank" rel="noopener">GitHub</a>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <h1>扫描页进来，<span>可编辑文档</span>出去</h1>
+      <p>这个 demo 使用内置样例模拟 Folio-OCR 的核心流程：版面检测、OCR 输出、表格保留和多格式导出。无需上传真实文件。</p>
+      <div class="command"><code>ollama pull glm-ocr
+uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr</code></div>
+    </div>
+    <div class="hero-proof" aria-hidden="true">
+      <div class="hero-proof-header">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span>local demo flow</span>
+      </div>
+      <div class="mini-flow">
+        <div class="mini-panel">
+          <div class="mini-paper">
+            <div class="mini-line short"></div>
+            <div class="mini-line long"></div>
+            <div class="mini-line mid"></div>
+            <div class="mini-line long"></div>
+            <div class="mini-line mid"></div>
+          </div>
+        </div>
+        <div class="mini-panel">
+          <pre class="mini-output"># 文档数字化
+
+| 页面 | 输出 |
+| --- | --- |
+| PDF | Markdown |
+| 表格 | Word / EPUB |</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="workspace">
+  <div class="toolbar">
+    <div class="toolbar-title">选择一个内置样例</div>
+    <div class="sample-tabs" role="tablist" aria-label="Demo samples">
+      <button class="tab-btn active" data-sample="book" type="button">扫描书页</button>
+      <button class="tab-btn" data-sample="table" type="button">表格文档</button>
+      <button class="tab-btn" data-sample="paper" type="button">论文 PDF</button>
+    </div>
+    <button class="run-btn" id="runDemo" type="button">运行识别演示</button>
+  </div>
+
+  <section class="demo-grid" id="demoGrid">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title" id="sourceLabel">输入：扫描书页</span>
+        <span class="status-pill"><span class="status-dot"></span><span id="sourceStatus">ready</span></span>
+      </div>
+      <div class="source-stage">
+        <div class="scan-page" id="scanPage">
+          <div class="scan-beam"></div>
+          <div class="region r1"></div>
+          <div class="region r2"></div>
+          <div class="region r3"></div>
+          <div class="region r4"></div>
+          <h2 class="doc-title" id="docTitle">第三章 文档数字化</h2>
+          <div class="scan-text" id="scanText"></div>
+          <div class="scan-table" id="scanTable"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">输出：OCR 结果</span>
+        <span class="status-pill"><span class="status-dot"></span><span id="resultStatus">cached</span></span>
+      </div>
+      <div class="result-body">
+        <div class="progress-wrap">
+          <div class="progress-line">
+            <span id="progressText">Layout detection + OCR complete</span>
+            <span id="progressTime">1.8s</span>
+          </div>
+          <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+        </div>
+        <div class="ocr-output">
+          <pre id="ocrOutput"></pre>
+        </div>
+        <div class="export-row">
+          <div class="export-card"><strong>.md</strong><span>Markdown</span></div>
+          <div class="export-card"><strong>.txt</strong><span>Plain text</span></div>
+          <div class="export-card"><strong>.docx</strong><span>Word</span></div>
+          <div class="export-card"><strong>.epub</strong><span>Reader</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <article class="note">
+      <h3>隐私边界清楚</h3>
+      <p>正式应用默认本地运行，OCR 请求走本机 Ollama；这个页面只展示内置样例，不接收上传。</p>
+    </article>
+    <article class="note">
+      <h3>结构不是截图</h3>
+      <p>输出区域是可复制的 Markdown 文本，表格会保留为 Markdown 或 HTML 结构。</p>
+    </article>
+    <article class="note">
+      <h3>跑通路径很短</h3>
+      <p>安装 Ollama 并拉取模型后，一条 `uvx` 命令即可启动本地工作台。</p>
+    </article>
+  </section>
+
+  <div class="actions">
+    <a class="export-btn primary" id="downloadMd" href="#" download="folio-ocr-demo.md">下载当前 Markdown</a>
+    <a class="export-btn" href="https://github.com/vorojar/Folio-OCR/releases/tag/v3.4.0" target="_blank" rel="noopener">查看 Release</a>
+    <a class="export-btn" href="https://github.com/vorojar/Folio-OCR" target="_blank" rel="noopener">打开源码</a>
+  </div>
+</main>
+
+<script>
+const samples = {
+  book: {
+    sourceLabel: "输入：扫描书页",
+    title: "第三章 文档数字化",
+    time: "1.8s",
+    paragraphs: [
+      "纸质资料数字化通常需要先切分页面区域，再分别识别标题、正文和表格。",
+      "Folio-OCR 会把相邻正文区域合并，减少 OCR 调用次数，同时保留页面中的结构信息。",
+      "识别结果可以继续校对、复制，也可以导出为 Markdown、Word 或 EPUB。"
+    ],
+    table: ["区域", "处理", "输出", "标题", "单独识别", "Markdown", "正文", "合并识别", "段落", "表格", "保留结构", "表格"],
+    markdown: `# 第三章 文档数字化
+
+纸质资料数字化通常需要先切分页面区域，再分别识别标题、正文和表格。
+
+Folio-OCR 会把相邻正文区域合并，减少 OCR 调用次数，同时保留页面中的结构信息。
+
+识别结果可以继续校对、复制，也可以导出为 Markdown、Word 或 EPUB。
+
+| 区域 | 处理 | 输出 |
+| --- | --- | --- |
+| 标题 | 单独识别 | Markdown |
+| 正文 | 合并识别 | 段落 |
+| 表格 | 保留结构 | 表格 |`
+  },
+  table: {
+    sourceLabel: "输入：表格文档",
+    title: "设备巡检记录",
+    time: "2.4s",
+    paragraphs: [
+      "下表为机房设备巡检记录，包含设备名称、状态和处理建议。",
+      "表格内容应在导出 Markdown、DOCX 和 EPUB 时继续保持结构。"
+    ],
+    table: ["设备", "状态", "建议", "UPS", "正常", "每周复查", "交换机", "告警", "检查端口", "空调", "正常", "清理滤网"],
+    markdown: `# 设备巡检记录
+
+下表为机房设备巡检记录，包含设备名称、状态和处理建议。
+
+表格内容应在导出 Markdown、DOCX 和 EPUB 时继续保持结构。
+
+| 设备 | 状态 | 建议 |
+| --- | --- | --- |
+| UPS | 正常 | 每周复查 |
+| 交换机 | 告警 | 检查端口 |
+| 空调 | 正常 | 清理滤网 |`
+  },
+  paper: {
+    sourceLabel: "输入：论文 PDF",
+    title: "Layout-Aware OCR Pipeline",
+    time: "2.1s",
+    paragraphs: [
+      "Document OCR quality depends on page rendering, region ordering and table preservation.",
+      "The pipeline renders PDF pages, detects layout blocks and sends cropped regions to a local vision model.",
+      "The final text can be reviewed in Markdown before exporting to downstream formats."
+    ],
+    table: ["Stage", "Input", "Output", "Render", "PDF", "Image", "Layout", "Image", "Blocks", "OCR", "Blocks", "Markdown"],
+    markdown: `# Layout-Aware OCR Pipeline
+
+Document OCR quality depends on page rendering, region ordering and table preservation.
+
+The pipeline renders PDF pages, detects layout blocks and sends cropped regions to a local vision model.
+
+The final text can be reviewed in Markdown before exporting to downstream formats.
+
+| Stage | Input | Output |
+| --- | --- | --- |
+| Render | PDF | Image |
+| Layout | Image | Blocks |
+| OCR | Blocks | Markdown |`
+  }
+};
+
+const state = { active: "book", running: false };
+const demoGrid = document.getElementById("demoGrid");
+const sourceLabel = document.getElementById("sourceLabel");
+const sourceStatus = document.getElementById("sourceStatus");
+const resultStatus = document.getElementById("resultStatus");
+const docTitle = document.getElementById("docTitle");
+const scanText = document.getElementById("scanText");
+const scanTable = document.getElementById("scanTable");
+const ocrOutput = document.getElementById("ocrOutput");
+const progressText = document.getElementById("progressText");
+const progressTime = document.getElementById("progressTime");
+const barFill = document.getElementById("barFill");
+const runDemo = document.getElementById("runDemo");
+const downloadMd = document.getElementById("downloadMd");
+
+function renderSample(name) {
+  const sample = samples[name];
+  state.active = name;
+  sourceLabel.textContent = sample.sourceLabel;
+  docTitle.textContent = sample.title;
+  scanText.innerHTML = sample.paragraphs.map(item => `<p>${escapeHtml(item)}</p>`).join("");
+  scanTable.innerHTML = sample.table.map(item => `<div class="scan-cell">${escapeHtml(item)}</div>`).join("");
+  ocrOutput.textContent = sample.markdown;
+  progressText.textContent = "Layout detection + OCR complete";
+  progressTime.textContent = sample.time;
+  barFill.style.setProperty("--progress", "100%");
+  sourceStatus.textContent = "ready";
+  resultStatus.textContent = "cached";
+  updateDownload(sample.markdown);
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.sample === name);
+  });
+}
+
+function runAnimation() {
+  if (state.running) return;
+  state.running = true;
+  demoGrid.classList.remove("demo-running");
+  void demoGrid.offsetWidth;
+  demoGrid.classList.add("demo-running");
+  sourceStatus.textContent = "scanning";
+  resultStatus.textContent = "running";
+  progressText.textContent = "Detecting layout regions";
+  progressTime.textContent = "0.0s";
+  barFill.style.setProperty("--progress", "0%");
+  ocrOutput.textContent = "";
+
+  const sample = samples[state.active];
+  const steps = [
+    [250, "Detecting layout regions", "0.3s", "26%"],
+    [650, "Merging text blocks", "0.8s", "52%"],
+    [1050, "Running local OCR", "1.3s", "78%"],
+    [1500, "Export-ready Markdown", sample.time, "100%"]
+  ];
+
+  steps.forEach(([delay, text, time, progress]) => {
+    setTimeout(() => {
+      progressText.textContent = text;
+      progressTime.textContent = time;
+      barFill.style.setProperty("--progress", progress);
+    }, delay);
+  });
+
+  setTimeout(() => {
+    ocrOutput.textContent = sample.markdown;
+    sourceStatus.textContent = "ready";
+    resultStatus.textContent = "complete";
+    state.running = false;
+  }, 1700);
+}
+
+function updateDownload(text) {
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const oldUrl = downloadMd.href;
+  downloadMd.href = url;
+  if (oldUrl.startsWith("blob:")) URL.revokeObjectURL(oldUrl);
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[char]));
+}
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => renderSample(btn.dataset.sample));
+});
+
+runDemo.addEventListener("click", runAnimation);
+renderSample("book");
+</script>
+</body>
+</html>
