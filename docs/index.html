@@ -138,6 +138,35 @@ nav {
 }
 .hero-screenshot img { width: 100%; display: block; }
 
+/* ── Video ── */
+.video { background: #fff; }
+.video-frame {
+  max-width: 980px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  box-shadow: 0 20px 70px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.06);
+}
+.video-frame iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+.video-link {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(45,45,45,.56);
+}
+.video-link a {
+  color: var(--accent-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+.video-link a:hover { color: var(--accent); }
+
 /* ── Section base ── */
 section { padding: 80px clamp(20px, 4vw, 48px); }
 .section-title {
@@ -326,6 +355,7 @@ footer a:hover { color: var(--accent-dark); }
   <a class="nav-brand" href="#">Folio-OCR</a>
   <div class="nav-links">
     <a href="#features">功能</a>
+    <a href="#video">视频</a>
     <a href="demo.html">Demo</a>
     <a href="#proof">示例</a>
     <a href="#deploy">安装</a>
@@ -353,6 +383,10 @@ footer a:hover { color: var(--accent-dark); }
       <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 10h16v10H4zM6 12h5v2H6zM6 16h10v2H6z"/></svg>
       打开互动 Demo
     </a>
+    <a class="btn-secondary" href="#video">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      看 1 分钟视频
+    </a>
   </div>
   <div class="quick-command"><code>ollama pull glm-ocr
 uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr</code></div>
@@ -361,6 +395,23 @@ uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr</code></div>
   <div class="hero-screenshot">
     <img src="demo.png" alt="Folio-OCR 界面截图">
   </div>
+</section>
+
+<!-- Video -->
+<section class="video" id="video">
+  <h2 class="section-title">1 分钟看真实批量 OCR</h2>
+  <p class="section-sub">B 站演示视频：GLM-OCR + Ollama + PP-DocLayoutV3，本地处理扫描文档</p>
+  <div class="video-frame">
+    <iframe
+      src="https://player.bilibili.com/player.html?bvid=BV17LFpzrEpW&page=1&high_quality=1&danmaku=0"
+      title="Folio-OCR Bilibili demo video"
+      allowfullscreen>
+    </iframe>
+  </div>
+  <p class="video-link">
+    播放器加载失败时，直接打开
+    <a href="https://www.bilibili.com/video/BV17LFpzrEpW" target="_blank" rel="noopener">B 站演示视频</a>
+  </p>
 </section>
 
 <!-- Proof -->

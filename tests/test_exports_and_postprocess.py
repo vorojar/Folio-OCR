@@ -24,6 +24,8 @@ def load_server_helpers():
         "_ollama_chat_payload",
         "_preserve_html_tables",
         "_remove_duplicate_display_math",
+        "_remove_empty_html_tables",
+        "_unwrap_html_paragraphs",
         "_dedup_lines",
         "_latex_to_unicode",
         "_convert_math_interior",
@@ -55,6 +57,7 @@ def load_server_helpers():
         "_CIRCLED": {str(i): chr(0x2460 + i - 1) for i in range(1, 21)},
         "OLLAMA_MODEL": "glm-ocr",
         "OLLAMA_NUM_CTX": 16384,
+        "OLLAMA_NUM_PREDICT": 2048,
         "datetime": datetime,
         "timezone": timezone,
         "html_escape": html_escape,
@@ -100,6 +103,22 @@ $$x$$
         self.assertEqual(result.count("<tr>"), 2)
         self.assertEqual(result.count("<td>同名</td>"), 2)
 
+    def test_postprocess_removes_inline_fences_and_empty_tables(self):
+        text = """Title
+```markdown
+Body
+<table border="1"><tr><td></td></tr></table>
+<p>Done</p>"""
+
+        result = self.helpers["_postprocess"](text)
+
+        self.assertNotIn("```", result)
+        self.assertNotIn("<table", result)
+        self.assertNotIn("<p>", result)
+        self.assertIn("Title", result)
+        self.assertIn("Body", result)
+        self.assertIn("Done", result)
+
 
 class OllamaPayloadTests(unittest.TestCase):
     def setUp(self):
@@ -111,6 +130,8 @@ class OllamaPayloadTests(unittest.TestCase):
         self.assertEqual(payload["model"], "glm-ocr")
         self.assertFalse(payload["stream"])
         self.assertEqual(payload["options"]["num_ctx"], 16384)
+        self.assertEqual(payload["options"]["num_predict"], 2048)
+        self.assertEqual(payload["options"]["temperature"], 0)
         self.assertEqual(payload["messages"][0]["content"], "OCR")
         self.assertEqual(payload["messages"][0]["images"], ["abc123"])
 

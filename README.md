@@ -8,7 +8,9 @@
 
 ![Folio-OCR 界面截图](demo.png)
 
-在线体验：打开 [互动 Demo](https://vorojar.github.io/Folio-OCR/demo.html)，用内置样例查看“扫描页 → OCR → Markdown/Word/EPUB”的完整流程。
+视频演示：先看 [B 站 1 分钟真实运行视频](https://www.bilibili.com/video/BV17LFpzrEpW)，快速理解“上传扫描件 → 本地 OCR → 可编辑/可导出”的完整流程。
+
+在线体验：打开 [互动 Demo](https://vorojar.github.io/Folio-OCR/demo.html)，用内置样例查看“扫描页 → OCR → Markdown/Word/EPUB”的交互流程。
 
 ## 30 秒看懂
 
@@ -119,6 +121,8 @@ LAYOUT_DEVICE=cuda  # 强制使用 CUDA，不可用时启动失败
 
 Folio-OCR 默认会给 Ollama 请求传入 `OLLAMA_NUM_CTX=16384`，避免 GLM-OCR 处理图片时因上下文太小触发底层 RoPE / KV cache 错误。内存非常紧张时可以调小，复杂图片或高分辨率扫描件建议保持默认或调大。
 
+如果遇到模型输出过长或重复内容，可通过 `OLLAMA_NUM_PREDICT` 限制单次 OCR 输出长度。默认值为 `4096`，短文档 demo 或低显存机器可以适当调小。
+
 ---
 
 ## 从源码运行
@@ -156,6 +160,7 @@ start.bat
 | `OLLAMA_BASE` | `http://localhost:11434` | Ollama 服务地址 |
 | `OLLAMA_MODEL` | `glm-ocr` | OCR 模型名 |
 | `OLLAMA_NUM_CTX` | `16384` | 传给 Ollama `/api/chat` 的上下文窗口 |
+| `OLLAMA_NUM_PREDICT` | `4096` | 传给 Ollama `/api/chat` 的最大输出 token 数 |
 | `OCR_REQUEST_TIMEOUT_MS` | `300000` | 前端 OCR 请求超时，长 PDF 或慢 GPU 可调大 |
 | `LAYOUT_DEVICE` | `cpu` | 版面分析设备：`cpu`、`cuda`、`auto` |
 | `DB_PATH` | `./folio_ocr.db` | SQLite 数据库路径 |

@@ -73,12 +73,20 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "glm-ocr")
 OLLAMA_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "16384"))
+OLLAMA_NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "4096"))
 if OLLAMA_NUM_CTX <= 0:
     raise RuntimeError("OLLAMA_NUM_CTX must be a positive integer")
+if OLLAMA_NUM_PREDICT <= 0:
+    raise RuntimeError("OLLAMA_NUM_PREDICT must be a positive integer")
 OCR_REQUEST_TIMEOUT_MS = int(os.environ.get("OCR_REQUEST_TIMEOUT_MS", "300000"))
 if OCR_REQUEST_TIMEOUT_MS <= 0:
     raise RuntimeError("OCR_REQUEST_TIMEOUT_MS must be a positive integer")
-OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。表格请保留为Markdown或HTML表格，不要转为纯文本。跳过页眉页脚和页码。"
+OCR_PROMPT = (
+    "请只转写图片中清晰可见的文字，并输出 Markdown。"
+    "保留原有换行、列表和表格结构；表格请使用 Markdown 或 HTML 表格。"
+    "不要解释、总结、补全、翻译或编造图片中不存在的内容。"
+    "跳过页眉、页脚和页码；如果没有可识别文字，只输出空字符串。"
+)
 
 # LaTeX → Unicode mapping (loaded once at import time)
 _LATEX_MAP_FILE = APP_DIR / "latex_unicode.json"
@@ -659,6 +667,8 @@ def _ollama_chat_payload(content: str, image_b64: str | None = None) -> dict:
         "stream": False,
         "options": {
             "num_ctx": OLLAMA_NUM_CTX,
+            "num_predict": OLLAMA_NUM_PREDICT,
+            "temperature": 0,
         },
     }
 
@@ -667,11 +677,32 @@ def _postprocess(text: str) -> str:
     """Strip markdown fences and convert LaTeX to Unicode."""
     text = re.sub(r'^```\w*\n?', '', text.strip())
     text = re.sub(r'\n?```$', '', text.strip())
+    text = re.sub(r'(?m)^\s*```\w*\s*$', '', text)
+    text = _remove_empty_html_tables(text)
+    text = _unwrap_html_paragraphs(text)
     # Remove standalone $$...$$ lines whose content duplicates nearby $...$ inline math
     text = _preserve_html_tables(text, _remove_duplicate_display_math)
     text = _latex_to_unicode(text)
     text = _preserve_html_tables(text, _dedup_lines)
     return text.strip()
+
+
+def _remove_empty_html_tables(text: str) -> str:
+    """Remove hallucinated empty table shells from OCR output."""
+    empty_table = re.compile(
+        r'<table\b[^>]*>\s*'
+        r'(?:<tbody>\s*)?'
+        r'<tr>\s*(?:<t[dh]\b[^>]*>\s*</t[dh]>\s*)+</tr>'
+        r'\s*(?:</tbody>\s*)?'
+        r'</table>',
+        flags=re.IGNORECASE,
+    )
+    return empty_table.sub('', text)
+
+
+def _unwrap_html_paragraphs(text: str) -> str:
+    """Convert plain HTML paragraph wrappers to Markdown-friendly text."""
+    return re.sub(r'</?p\b[^>]*>', '', text, flags=re.IGNORECASE)
 
 
 def _preserve_html_tables(text: str, transform) -> str:
