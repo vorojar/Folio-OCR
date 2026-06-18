@@ -10,8 +10,6 @@
 
 视频演示：先看 [B 站 1 分钟真实运行视频](https://www.bilibili.com/video/BV17LFpzrEpW)，快速理解“上传扫描件 → 本地 OCR → 可编辑/可导出”的完整流程。
 
-在线体验：打开 [互动 Demo](https://vorojar.github.io/Folio-OCR/demo.html)，用内置样例查看“扫描页 → OCR → Markdown/Word/EPUB”的交互流程。
-
 ## 30 秒看懂
 
 Folio-OCR 解决的是一个很具体的问题：把扫描 PDF、书籍照片、试卷和文档图片批量转成可编辑文本，并尽量保留标题、正文、表格和导出结构。它默认本地运行，文档不需要上传到第三方 OCR 服务。
