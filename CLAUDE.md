@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Folio-OCR is a three-column document OCR workbench powered by [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) via Ollama. Single-file FastAPI backend + single-file frontend, designed for daily batch OCR of books and documents.
+Folio-OCR is a three-column document OCR workbench powered by [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) via Ollama. It ships as a small Python package with a FastAPI backend and vanilla JS frontend, designed for daily batch OCR of books and documents.
 
 ## Commands
 
@@ -13,8 +13,11 @@ Folio-OCR is a three-column document OCR workbench powered by [GLM-OCR](https://
 # Start server
 python server.py
 
+# Start packaged entry
+folio-ocr
+
 # Start with hot reload
-uvicorn server:app --reload --host 0.0.0.0 --port 3000
+uvicorn folio_ocr.server:app --reload --host 0.0.0.0 --port 3000
 
 # Install dependencies
 pip install -r requirements.txt
@@ -30,8 +33,8 @@ start.bat
 
 ## Architecture
 
-**Backend** (`server.py`):
-- FastAPI app with CORS, version 3.1.0
+**Backend** (`folio_ocr/server.py`):
+- FastAPI app with CORS, version 3.4.0
 - OCR via Ollama `/api/chat` (base64 images), model `glm-ocr` on `localhost:11434`
 - Chinese OCR prompt: 识别正文 + 跳过页眉页脚 + 表格输出为 Markdown/HTML
 - Auto-strips ```` ```markdown ``` ```` fences from model output
@@ -40,15 +43,16 @@ start.bat
 - SQLite persistence (`folio_ocr.db`), uploads in `uploads/{doc_id}/`, orphan cleanup on startup
 - Path traversal protection via `_safe_doc_path()`
 - Auto-starts Ollama if not running
+- `OCR_REQUEST_TIMEOUT_MS` config is exposed through `/api/status` so the frontend can avoid short browser aborts on slow PDF OCR
 
-**Frontend** (`index.html`):
+**Frontend** (`folio_ocr/index.html`):
 - Warm cream/charcoal theme (CSS variables: `--cream`, `--charcoal`, `--accent`)
 - Three-column layout: page list (200px) | image preview (flex) | OCR result (380px)
 - Multi-file upload (click/drag, images + PDFs mixed), SSE stream parsing via ReadableStream
 - Auto-OCR on page select, result caching in state
 - Editable OCR results (`<textarea>`) with Edit/Preview toggle (renders HTML tables)
 - Batch "OCR All Pages" with Stop button, progress bar + ETA display
-- Export: .md / .txt / .docx (Word-compatible HTML, zero dependencies)
+- Export: .md / .txt / .docx / .epub
 - Copy per-page or all pages
 
 **API Endpoints**:

@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_server_helpers():
-    source = (ROOT / "server.py").read_text(encoding="utf-8")
+    server_path = ROOT / "folio_ocr" / "server.py"
+    source = server_path.read_text(encoding="utf-8")
     tree = ast.parse(source)
     wanted_functions = {
         "_postprocess",
@@ -45,7 +46,7 @@ def load_server_helpers():
     module = ast.Module(body=nodes, type_ignores=[])
     ast.fix_missing_locations(module)
 
-    latex_data = json.loads((ROOT / "latex_unicode.json").read_text(encoding="utf-8"))
+    latex_data = json.loads((ROOT / "folio_ocr" / "latex_unicode.json").read_text(encoding="utf-8"))
     namespace = {
         "HTMLParser": HTMLParser,
         "_ExportPage": object,
@@ -62,7 +63,7 @@ def load_server_helpers():
         "uuid": uuid,
         "zipfile": zipfile,
     }
-    exec(compile(module, str(ROOT / "server.py"), "exec"), namespace)
+    exec(compile(module, str(server_path), "exec"), namespace)
     return namespace
 
 

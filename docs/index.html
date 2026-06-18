@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Folio-OCR — 智能文档 OCR 工作台</title>
+<link rel="icon" href="data:,">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -39,6 +40,7 @@ nav {
 .nav-brand {
   font-size: 20px; font-weight: 700; color: var(--accent);
   letter-spacing: -0.5px; text-decoration: none;
+  white-space: nowrap;
 }
 .nav-links { display: flex; gap: 8px; }
 .nav-links a {
@@ -88,6 +90,22 @@ nav {
 .release-note a { color: #fff; font-weight: 600; text-decoration: none; }
 .release-note a:hover { color: var(--accent); }
 .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.quick-command {
+  max-width: 760px; margin: 26px auto 0;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  text-align: left;
+  overflow-x: auto;
+}
+.quick-command code {
+  color: rgba(255,255,255,.9);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre;
+}
 .hero-bottom {
   background: var(--cream);
   padding: 48px clamp(20px, 4vw, 48px) 80px;
@@ -157,6 +175,62 @@ section { padding: 80px clamp(20px, 4vw, 48px); }
 }
 .feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
 .feature-card p { font-size: 14px; color: rgba(45,45,45,.6); line-height: 1.7; }
+
+/* ── Proof ── */
+.proof { background: #fff; }
+.proof-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+.proof-panel {
+  border: 1px solid var(--warm-gray);
+  border-radius: 12px;
+  background: var(--cream);
+  overflow: hidden;
+}
+.proof-panel h3 {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--warm-gray);
+  font-size: 15px;
+  font-weight: 700;
+}
+.proof-panel pre {
+  padding: 18px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(45,45,45,.78);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.proof-page {
+  min-height: 280px;
+  padding: 24px;
+  background:
+    linear-gradient(90deg, rgba(45,45,45,.05) 1px, transparent 1px),
+    linear-gradient(rgba(45,45,45,.05) 1px, transparent 1px),
+    #fbfaf8;
+  background-size: 34px 34px;
+  color: rgba(45,45,45,.42);
+  font-size: 14px;
+}
+.proof-line { height: 10px; border-radius: 4px; background: rgba(45,45,45,.18); margin-bottom: 13px; }
+.proof-line.short { width: 42%; }
+.proof-line.mid { width: 68%; }
+.proof-line.long { width: 88%; }
+.proof-table {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin-top: 22px;
+  background: rgba(45,45,45,.24);
+  border: 1px solid rgba(45,45,45,.24);
+}
+.proof-cell { min-height: 32px; background: #fbfaf8; }
 
 /* ── Deploy ── */
 .deploy { background: var(--cream-dark); }
@@ -229,11 +303,18 @@ footer a:hover { color: var(--accent-dark); }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .hero-top { padding-top: 120px; }
+  nav { padding: 0 16px; }
+  .nav-brand { font-size: 18px; }
+  .nav-links a:not(.nav-btn) { display: none; }
+  .nav-btn { padding: 8px 12px; font-size: 14px; }
+  .hero-top { padding-top: 116px; }
   .release-note { display: flex; text-align: left; }
   .hero-actions { flex-direction: column; align-items: center; }
   .btn-primary, .btn-secondary { width: 100%; max-width: 280px; justify-content: center; }
+  .quick-command code { font-size: 12px; }
+  .quick-command code { white-space: pre-wrap; overflow-wrap: anywhere; }
   .features-grid { grid-template-columns: 1fr; }
+  .proof-grid { grid-template-columns: 1fr; }
   section { padding: 56px 16px; }
 }
 </style>
@@ -245,7 +326,8 @@ footer a:hover { color: var(--accent-dark); }
   <a class="nav-brand" href="#">Folio-OCR</a>
   <div class="nav-links">
     <a href="#features">功能</a>
-    <a href="#deploy">部署</a>
+    <a href="#proof">示例</a>
+    <a href="#deploy">安装</a>
     <a href="https://github.com/vorojar/Folio-OCR" class="nav-btn" target="_blank">
       <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       GitHub
@@ -255,26 +337,64 @@ footer a:hover { color: var(--accent-dark); }
 
 <!-- Hero -->
 <section class="hero-top">
-  <h1>智能文档 <span>OCR</span> 工作台</h1>
-  <p>基于 GLM-OCR + Ollama，三栏布局、批量识别、一键导出，专为书籍和文档设计</p>
+  <h1>Folio-<span>OCR</span></h1>
+  <p>本地批量 OCR 工作台，把扫描 PDF、书籍照片和表格文档转成 Markdown、Word、EPUB</p>
   <div class="release-note">
-    v3.3.1 已发布：默认增大 Ollama OCR 上下文，规避 GLM-OCR 的 GGML_ASSERT 崩溃。
-    <a href="https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.1" target="_blank">查看更新</a>
+    v3.4.0 已发布：新增 uvx 启动、Release 包构建和长 PDF 超时配置。
+    <a href="https://github.com/vorojar/Folio-OCR/releases/tag/v3.4.0" target="_blank">查看更新</a>
   </div>
   <div class="hero-actions">
     <a class="btn-primary" href="#deploy">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      快速部署
+      3 分钟跑起来
     </a>
-    <a class="btn-secondary" href="https://github.com/vorojar/Folio-OCR" target="_blank">
-      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      查看源码
+    <a class="btn-secondary" href="#proof">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 10h16v10H4zM6 12h5v2H6zM6 16h10v2H6z"/></svg>
+      看识别效果
     </a>
   </div>
+  <div class="quick-command"><code>ollama pull glm-ocr
+uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr</code></div>
 </section>
 <section class="hero-bottom">
   <div class="hero-screenshot">
     <img src="demo.png" alt="Folio-OCR 界面截图">
+  </div>
+</section>
+
+<!-- Proof -->
+<section class="proof" id="proof">
+  <h2 class="section-title">从扫描页到可编辑文档</h2>
+  <p class="section-sub">上传 PDF 或图片，按页面校对，最后导出 Markdown、Word 或 EPUB</p>
+  <div class="proof-grid">
+    <div class="proof-panel">
+      <h3>输入：扫描页 / PDF 页面</h3>
+      <div class="proof-page">
+        <div class="proof-line short"></div>
+        <div class="proof-line long"></div>
+        <div class="proof-line mid"></div>
+        <div class="proof-line long"></div>
+        <div class="proof-line mid"></div>
+        <div class="proof-table">
+          <div class="proof-cell"></div><div class="proof-cell"></div><div class="proof-cell"></div>
+          <div class="proof-cell"></div><div class="proof-cell"></div><div class="proof-cell"></div>
+          <div class="proof-cell"></div><div class="proof-cell"></div><div class="proof-cell"></div>
+        </div>
+      </div>
+    </div>
+    <div class="proof-panel">
+      <h3>输出：保留结构的 Markdown</h3>
+      <pre># 第三章 文档数字化
+
+Folio-OCR 会先检测标题、正文、表格等区域，
+再把页面识别为可编辑 Markdown。
+
+| 项目 | 输出 | 用途 |
+| --- | --- | --- |
+| 表格 | Markdown / HTML | Word、EPUB |
+| 正文 | 段落文本 | 校对、复制 |
+| 批量页 | 多页文档 | 书籍数字化 |</pre>
+    </div>
   </div>
 </section>
 
@@ -318,8 +438,8 @@ footer a:hover { color: var(--accent-dark); }
 
 <!-- Deploy -->
 <section class="deploy" id="deploy">
-  <h2 class="section-title">三条命令，即刻部署</h2>
-  <p class="section-sub">Docker Compose 一键启动，无需手动配置环境</p>
+  <h2 class="section-title">两种方式，即刻启动</h2>
+  <p class="section-sub">uvx 适合快速体验，Docker Compose 适合完整容器部署</p>
   <div class="deploy-box">
     <div class="deploy-header">
       <div class="deploy-dot"></div>
@@ -328,11 +448,13 @@ footer a:hover { color: var(--accent-dark); }
       <span>Terminal</span>
     </div>
     <div class="deploy-body">
-      <pre><span class="comment"># 克隆项目</span>
+      <pre><span class="comment"># 方式一：不 clone，直接运行</span>
+<span class="cmd">ollama pull</span> glm-ocr
+<span class="cmd">uvx --from</span> git+https://github.com/vorojar/Folio-OCR folio-ocr
+
+<span class="comment"># 方式二：Docker Compose</span>
 <span class="cmd">git clone</span> https://github.com/vorojar/Folio-OCR.git
 <span class="cmd">cd</span> Folio-OCR
-
-<span class="comment"># 启动全部服务</span>
 <span class="cmd">docker compose</span> up -d
 
 <span class="comment"># 下载 OCR 模型（约 2GB，仅首次）</span>
@@ -342,7 +464,7 @@ footer a:hover { color: var(--accent-dark); }
 <span class="cmd">open</span> http://localhost:3000</pre>
     </div>
   </div>
-  <p class="deploy-note">也支持不用 Docker 直接运行 — 详见 <a href="https://github.com/vorojar/Folio-OCR#%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E4%B8%8D%E7%94%A8-docker" target="_blank">本地部署说明</a></p>
+  <p class="deploy-note">详细配置、Ollama 兼容和源码开发说明见 <a href="https://github.com/vorojar/Folio-OCR#%E9%85%8D%E7%BD%AE%E9%A1%B9" target="_blank">README</a></p>
 </section>
 
 <!-- Tech -->

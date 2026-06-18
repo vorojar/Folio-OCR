@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "folio-ocr"
+version = "3.4.0"
+description = "Local batch OCR workbench for PDFs and scanned documents, powered by Ollama and GLM-OCR."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "vorojar wu" }
+]
+keywords = [
+  "ocr",
+  "pdf-ocr",
+  "document-processing",
+  "ollama",
+  "glm-ocr",
+  "batch-ocr",
+  "book-digitization",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Web Environment",
+  "Framework :: FastAPI",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics :: Capture :: Scanners",
+  "Topic :: Text Processing",
+]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://vorojar.github.io/Folio-OCR/"
+Repository = "https://github.com/vorojar/Folio-OCR"
+Issues = "https://github.com/vorojar/Folio-OCR/issues"
+Changelog = "https://github.com/vorojar/Folio-OCR/blob/main/CHANGELOG.md"
+
+[project.scripts]
+folio-ocr = "folio_ocr.server:main"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["folio_ocr*"]
+
+[tool.setuptools.package-data]
+folio_ocr = ["index.html", "script.js", "style.css", "latex_unicode.json"]

@@ -1,6 +1,6 @@
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
     ports:
       - "11434:11434"
     volumes:
@@ -21,6 +21,7 @@ services:
       - DB_PATH=/app/data/folio_ocr.db
       - LAYOUT_DEVICE=cpu
       - OLLAMA_NUM_CTX=16384
+      - OCR_REQUEST_TIMEOUT_MS=300000
     volumes:
       - app_uploads:/app/uploads
       - app_db:/app/data

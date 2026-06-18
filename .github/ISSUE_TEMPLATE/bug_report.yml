@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible Folio-OCR problem
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the failure and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Folio-OCR version or commit
+      placeholder: v3.3.1 or git commit hash
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you running Folio-OCR?
+      options:
+        - Docker Compose
+        - uvx / pipx / pip install
+        - python server.py from source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: ollama
+    attributes:
+      label: Ollama version
+      placeholder: ollama --version
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: OCR model
+      placeholder: glm-ocr
+    validations:
+      required: true
+  - type: textarea
+    id: document
+    attributes:
+      label: Document details
+      description: File type, file size, page count, image dimensions, and whether it fails on every page or one page.
+      placeholder: PDF, 1 MB, 12 pages, fails on page 3 after about 120 seconds
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste the relevant app and Ollama logs. Remove private document text before posting.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Runtime settings
+      description: Include non-default values such as LAYOUT_DEVICE, OLLAMA_NUM_CTX, OCR_REQUEST_TIMEOUT_MS, OLLAMA_VERSION, GPU/CPU details.

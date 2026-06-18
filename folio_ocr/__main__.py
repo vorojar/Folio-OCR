@@ -1,4 +1,4 @@
-from folio_ocr.server import app, main
+from .server import main
 
 
 if __name__ == "__main__":

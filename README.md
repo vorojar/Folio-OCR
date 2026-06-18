@@ -2,11 +2,54 @@
 
 基于 [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR) + [Ollama](https://ollama.com/) 的三栏文档 OCR 工作台，专为书籍和文档的日常批量识别设计。
 
-> **2026-05-28 · v3.3.1 已发布**：默认增大 Ollama OCR 请求上下文，规避 GLM-OCR 的 `GGML_ASSERT` 崩溃；v3.3.0 已修复表格导出并新增 EPUB。查看 [Release Notes](https://github.com/vorojar/Folio-OCR/releases/tag/v3.3.1)。
+> **2026-06-18 · v3.4.0 已发布**：新增 `folio-ocr` 命令、`uvx` 启动、GitHub Release 包构建、License、CI 和长 PDF 超时配置。查看 [Release Notes](https://github.com/vorojar/Folio-OCR/releases/tag/v3.4.0)。
 
-![架构](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square) ![前端](https://img.shields.io/badge/Frontend-Vanilla_JS-F7DF1E?style=flat-square) ![数据库](https://img.shields.io/badge/DB-SQLite-003B57?style=flat-square) [![主页](https://img.shields.io/badge/Homepage-GitHub%20Pages-D4A373?style=flat-square)](https://vorojar.github.io/Folio-OCR/)
+![架构](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square) ![前端](https://img.shields.io/badge/Frontend-Vanilla_JS-F7DF1E?style=flat-square) ![数据库](https://img.shields.io/badge/DB-SQLite-003B57?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-2D2D2D?style=flat-square) [![主页](https://img.shields.io/badge/Homepage-GitHub%20Pages-D4A373?style=flat-square)](https://vorojar.github.io/Folio-OCR/)
 
 ![Folio-OCR 界面截图](demo.png)
+
+## 30 秒看懂
+
+Folio-OCR 解决的是一个很具体的问题：把扫描 PDF、书籍照片、试卷和文档图片批量转成可编辑文本，并尽量保留标题、正文、表格和导出结构。它默认本地运行，文档不需要上传到第三方 OCR 服务。
+
+- **输入**：PDF、PNG、JPG、GIF、BMP，可混合批量上传。
+- **处理**：PP-DocLayoutV3 做版面分区，GLM-OCR 通过 Ollama 做视觉 OCR。
+- **输出**：Markdown、TXT、Word `.docx`、EPUB。
+- **适合**：书籍数字化、扫描件整理、表格文档转写、离线/隐私敏感 OCR。
+
+## 快速开始
+
+### 方式一：uvx / pipx 直接运行
+
+适合已经安装 Python 和 Ollama 的用户，不需要手动 clone 仓库：
+
+```bash
+ollama pull glm-ocr
+uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr
+```
+
+然后打开浏览器访问：http://localhost:3000
+
+也可以用 pipx：
+
+```bash
+pipx run --spec git+https://github.com/vorojar/Folio-OCR folio-ocr
+```
+
+### 方式二：Docker Compose 一键部署
+
+适合想把 Ollama 和 Folio-OCR 一起放进容器的用户：
+
+```bash
+git clone https://github.com/vorojar/Folio-OCR.git
+cd Folio-OCR
+docker compose up -d
+docker compose exec ollama ollama pull glm-ocr
+```
+
+完成后打开浏览器访问：http://localhost:3000
+
+> 有 NVIDIA 显卡？编辑 `docker-compose.yml`，取消 `deploy:` 段落的注释即可启用 GPU 加速。
 
 ## 功能特性
 
@@ -49,31 +92,13 @@
 - 暖色奶油/炭灰主题，中文字体适配
 
 ### 网络容错
-- 所有网络请求带超时保护（按场景分档：5s ~ 180s）
+- 所有网络请求带超时保护（按场景分档：5s ~ 300s）
 - Toast 弹窗通知：保存失败、OCR 超时、加载错误等即时反馈
 - Ollama 断开后 UI 不会冻住，超时后自动恢复可操作状态
 
-## 快速开始（Docker 一键部署）
+## Docker 常用命令
 
-只需装好 [Docker](https://docs.docker.com/get-docker/)，三条命令搞定：
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/vorojar/Folio-OCR.git
-cd Folio-OCR
-
-# 2. 启动服务（首次会自动构建镜像，需要几分钟）
-docker compose up -d
-
-# 3. 下载 OCR 模型（约 2GB，只需执行一次）
-docker compose exec ollama ollama pull glm-ocr
-```
-
-完成后打开浏览器访问 **http://localhost:3000** 即可使用。
-
-> **有 NVIDIA 显卡？** 编辑 `docker-compose.yml`，取消 `deploy:` 段落的注释即可启用 GPU 加速。
-
-常用 Docker 命令：
+默认数据会保存到 Docker volume，重启服务不会丢失文档和 OCR 结果：
 
 ```bash
 docker compose down          # 停止服务
@@ -94,11 +119,11 @@ Folio-OCR 默认会给 Ollama 请求传入 `OLLAMA_NUM_CTX=16384`，避免 GLM-O
 
 ---
 
-## 本地部署（不用 Docker）
+## 从源码运行
 
 ### 环境要求
 
-- Python 3.10+
+- Python 3.10-3.12（推荐 3.11）
 - [Ollama](https://ollama.com/) 已安装且 `ollama` 在 PATH 中
 
 ### 安装和启动
@@ -114,7 +139,7 @@ ollama pull glm-ocr
 python server.py
 
 # 或使用热重载开发
-uvicorn server:app --reload --host 0.0.0.0 --port 3000
+uvicorn folio_ocr.server:app --reload --host 0.0.0.0 --port 3000
 
 # Windows 一键启动
 start.bat
@@ -122,22 +147,39 @@ start.bat
 
 服务启动后访问：http://localhost:3000
 
+## 配置项
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `OLLAMA_BASE` | `http://localhost:11434` | Ollama 服务地址 |
+| `OLLAMA_MODEL` | `glm-ocr` | OCR 模型名 |
+| `OLLAMA_NUM_CTX` | `16384` | 传给 Ollama `/api/chat` 的上下文窗口 |
+| `OCR_REQUEST_TIMEOUT_MS` | `300000` | 前端 OCR 请求超时，长 PDF 或慢 GPU 可调大 |
+| `LAYOUT_DEVICE` | `cpu` | 版面分析设备：`cpu`、`cuda`、`auto` |
+| `DB_PATH` | `./folio_ocr.db` | SQLite 数据库路径 |
+| `UPLOAD_DIR` | `./uploads` | 上传文件和 PDF 拆页目录 |
+| `HOST` | `0.0.0.0` | `folio-ocr` 命令启动时监听地址 |
+| `PORT` | `3000` | `folio-ocr` 命令启动时监听端口 |
+
 ## 项目结构
 
 ```
-glmocr/
-├── server.py            # FastAPI 后端（单文件）
-├── index.html           # HTML 页面
-├── script.js            # 前端逻辑
-├── style.css            # 样式
-├── latex_unicode.json   # LaTeX → Unicode 映射表
-├── requirements.txt     # Python 依赖
-├── Dockerfile           # Docker 镜像构建
-├── docker-compose.yml   # Docker Compose 编排
-├── .dockerignore        # Docker 构建排除列表
-├── start.bat            # Windows 启动脚本
-├── folio_ocr.db         # SQLite 数据库（运行时生成）
-└── uploads/             # 上传文件目录（运行时生成）
+Folio-OCR/
+├── folio_ocr/
+│   ├── server.py          # FastAPI 后端
+│   ├── index.html         # 应用页面
+│   ├── script.js          # 前端逻辑
+│   ├── style.css          # 样式
+│   └── latex_unicode.json # LaTeX → Unicode 映射表
+├── server.py              # 兼容入口：python server.py
+├── pyproject.toml         # Python 包元数据和 folio-ocr 命令
+├── requirements.txt       # Python 依赖
+├── Dockerfile             # Docker 镜像构建
+├── docker-compose.yml     # Docker Compose 编排
+├── scripts/verify.sh      # 本地/CI 验证入口
+├── docs/                  # GitHub Pages 首页
+├── folio_ocr.db           # SQLite 数据库（运行时生成）
+└── uploads/               # 上传文件目录（运行时生成）
 ```
 
 ## API 端点
@@ -150,6 +192,7 @@ glmocr/
 | GET | `/api/images/{doc_id}/{filename}` | 获取页面图片 |
 | POST | `/api/ocr/{doc_id}/{page_num}` | 单页 OCR |
 | POST | `/api/export/{doc_id}` | 导出 DOCX |
+| POST | `/api/export/{doc_id}/epub` | 导出 EPUB |
 | GET | `/api/documents` | 列出所有文档 |
 | GET | `/api/documents/{doc_id}` | 获取文档详情（含所有页面） |
 | DELETE | `/api/documents/{doc_id}` | 删除文档 |
@@ -196,6 +239,28 @@ LAYOUT_DEVICE=cpu python server.py
 
 ```bash
 OLLAMA_NUM_CTX=24576 python server.py
+```
+
+### Ollama v0.30.6 处理 PDF 超时
+
+如果约 1 MB 的 PDF 在较新 Ollama 版本上超时，先确认是浏览器请求超时还是 Ollama runner 卡住：
+
+```bash
+docker compose logs -f app
+docker compose logs -f ollama
+```
+
+Folio-OCR 默认已把前端 OCR 请求超时提高到 300 秒。慢机器或大页 PDF 可以继续调大：
+
+```bash
+OCR_REQUEST_TIMEOUT_MS=600000 python server.py
+```
+
+Docker 用户可以临时切换 Ollama 镜像版本做兼容性验证：
+
+```bash
+OLLAMA_VERSION=0.19.0 docker compose up -d
+docker compose exec ollama ollama pull glm-ocr
 ```
 
 ### 单次最多能处理多少张图片？

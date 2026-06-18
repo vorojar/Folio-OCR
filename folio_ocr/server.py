@@ -1,0 +1,1716 @@
+# -*- coding: utf-8 -*-
+"""
+Folio-OCR Server - Ollama Backend
+Three-column document workbench
+"""
+import os
+import uuid
+import time
+import asyncio
+import base64
+import logging
+import shutil
+import subprocess
+import sqlite3
+import zipfile
+from contextlib import contextmanager
+import httpx
+from pathlib import Path
+from datetime import datetime, timezone
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+import json
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import re
+from html import escape as html_escape
+from html.parser import HTMLParser
+from urllib.parse import quote
+import fitz  # PyMuPDF for PDF processing
+from PIL import Image
+import io
+from pydantic import BaseModel
+from docx import Document as DocxDocument
+from docx.shared import Pt, RGBColor
+from docx.oxml.ns import qn
+from docx.enum.section import WD_SECTION_START
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+# Paths
+APP_DIR = Path(__file__).resolve().parent
+RUN_DIR = Path.cwd()
+
+# Setup logging
+LOG_FILE = Path(os.environ.get("LOG_FILE", RUN_DIR / "server.log"))
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logger.info(f"=== Server starting, log file: {LOG_FILE} ===")
+
+app = FastAPI(title="Folio-OCR Service", version="3.4.0")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Directories
+UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", RUN_DIR / "uploads"))
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Ollama config
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "glm-ocr")
+OLLAMA_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "16384"))
+if OLLAMA_NUM_CTX <= 0:
+    raise RuntimeError("OLLAMA_NUM_CTX must be a positive integer")
+OCR_REQUEST_TIMEOUT_MS = int(os.environ.get("OCR_REQUEST_TIMEOUT_MS", "300000"))
+if OCR_REQUEST_TIMEOUT_MS <= 0:
+    raise RuntimeError("OCR_REQUEST_TIMEOUT_MS must be a positive integer")
+OCR_PROMPT = "识别图片中的全部内容，输出Markdown格式。表格请保留为Markdown或HTML表格，不要转为纯文本。跳过页眉页脚和页码。"
+
+# LaTeX → Unicode mapping (loaded once at import time)
+_LATEX_MAP_FILE = APP_DIR / "latex_unicode.json"
+with open(_LATEX_MAP_FILE, "r", encoding="utf-8") as _f:
+    _LATEX_DATA = json.load(_f)
+_LATEX_SIMPLE: list[tuple[str, str]] = sorted(
+    _LATEX_DATA["simple"].items(), key=lambda x: -len(x[0])
+)  # longest match first
+_LATEX_FRACTIONS: dict[str, str] = _LATEX_DATA.get("fractions", {})
+_CIRCLED = {str(i): chr(0x2460 + i - 1) for i in range(1, 21)}  # ①-⑳
+
+# --- SQLite persistence ---
+DB_PATH = Path(os.environ.get("DB_PATH", RUN_DIR / "folio_ocr.db"))
+
+
+def _init_db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS documents (
+            doc_id     TEXT PRIMARY KEY,
+            filename   TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS pages (
+            doc_id      TEXT NOT NULL REFERENCES documents(doc_id) ON DELETE CASCADE,
+            num         INTEGER NOT NULL,
+            filename    TEXT NOT NULL,
+            ocr_text    TEXT,
+            ocr_regions TEXT,
+            ocr_time    REAL,
+            PRIMARY KEY (doc_id, num)
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+_init_db()
+
+# Shared httpx client
+_http_client: httpx.AsyncClient | None = None
+
+# Layout detection model (PP-DocLayoutV3)
+_LAYOUT_MODEL_NAME = "PaddlePaddle/PP-DocLayoutV3_safetensors"
+_layout_processor = None
+_layout_model = None
+# Labels to skip (not useful for OCR text mapping)
+_LAYOUT_SKIP_LABELS = {"header", "footer", "footnote", "number"}
+# Labels that must be OCR'd individually (not merged with neighbors)
+_LAYOUT_SOLO_LABELS = {"table", "figure"}
+_LAYOUT_THRESHOLD = 0.5
+_LAYOUT_DEVICE = os.environ.get("LAYOUT_DEVICE", "cpu").lower()
+if _LAYOUT_DEVICE not in {"cpu", "cuda", "auto"}:
+    raise RuntimeError("LAYOUT_DEVICE must be one of: cpu, cuda, auto")
+
+
+def _select_layout_device(torch_module) -> str:
+    if _LAYOUT_DEVICE == "cpu":
+        return "cpu"
+    if _LAYOUT_DEVICE == "cuda":
+        if not torch_module.cuda.is_available():
+            raise RuntimeError("LAYOUT_DEVICE=cuda but CUDA is not available")
+        return "cuda"
+    return "cuda" if torch_module.cuda.is_available() else "cpu"
+
+
+def _ensure_layout_model():
+    """Lazy-load torch + transformers + layout model on first use."""
+    global _layout_processor, _layout_model
+    if _layout_model is not None:
+        return
+    import torch
+    from transformers import RTDetrImageProcessor, AutoModelForObjectDetection
+    t0 = time.time()
+    logger.info(f"[layout] Loading {_LAYOUT_MODEL_NAME}...")
+    _layout_processor = RTDetrImageProcessor.from_pretrained(_LAYOUT_MODEL_NAME)
+    _layout_model = AutoModelForObjectDetection.from_pretrained(_LAYOUT_MODEL_NAME)
+    device = _select_layout_device(torch)
+    if device == "cuda":
+        _layout_model.to("cuda")
+        logger.info(f"[layout] Model loaded on CUDA: {time.time() - t0:.2f}s")
+    else:
+        logger.info(f"[layout] Model loaded on CPU: {time.time() - t0:.2f}s")
+    _layout_model.eval()
+
+
+@app.on_event("startup")
+async def startup_event():
+    global _http_client
+    _http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
+
+    # Clean up orphan directories not tracked in DB
+    with get_db() as conn:
+        rows = conn.execute("SELECT doc_id FROM documents").fetchall()
+        known_ids = {r["doc_id"] for r in rows}
+    for child in UPLOAD_DIR.iterdir():
+        if child.is_dir() and child.name not in known_ids:
+            logger.info(f"[cleanup] Removing orphan directory: {child}")
+            shutil.rmtree(child, ignore_errors=True)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global _http_client
+    if _http_client:
+        await _http_client.aclose()
+
+
+async def check_ollama() -> dict:
+    """Check Ollama status and model availability"""
+    try:
+        resp = await _http_client.get(f"{OLLAMA_BASE}/api/tags", timeout=5.0)
+        resp.raise_for_status()
+        data = resp.json()
+        models = [m["name"] for m in data.get("models", [])]
+        has_model = any(OLLAMA_MODEL in m for m in models)
+        return {"online": True, "model_loaded": has_model, "models": models}
+    except Exception:
+        return {"online": False, "model_loaded": False, "models": []}
+
+
+# Max image height for single OCR call (fallback when layout detection returns nothing)
+MAX_IMAGE_HEIGHT = 1600
+SEGMENT_OVERLAP = 80
+
+
+def detect_layout(img: Image.Image) -> list[dict]:
+    """Detect document layout regions using PP-DocLayoutV3.
+    Returns [{label, bbox: [x1,y1,x2,y2], score}] sorted by reading order (top-to-bottom).
+    """
+    import torch
+    _ensure_layout_model()
+    device = next(_layout_model.parameters()).device
+    inputs = _layout_processor(images=img, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+        outputs = _layout_model(**inputs)
+
+    target_sizes = torch.tensor([img.size[::-1]], device=device)  # (height, width)
+    results = _layout_processor.post_process_object_detection(
+        outputs, target_sizes=target_sizes, threshold=_LAYOUT_THRESHOLD
+    )[0]
+
+    regions = []
+    id2label = _layout_model.config.id2label
+    for score, label_id, box in zip(results["scores"], results["labels"], results["boxes"]):
+        label = id2label[label_id.item()]
+        if label in _LAYOUT_SKIP_LABELS:
+            continue
+        bbox = [round(c) for c in box.tolist()]  # [x1, y1, x2, y2] in pixels
+        regions.append({"label": label, "bbox": bbox, "score": round(score.item(), 3)})
+
+    # Sort by column-aware reading order
+    regions = _sort_by_columns(regions, img.size[0])
+
+    # Fill gaps between full-width bottom and each column's first region
+    regions = _fill_column_gaps(regions, img.size[0])
+
+    logger.info(f"[layout] Detected {len(regions)} regions")
+    return regions
+
+
+def _fill_column_gaps(regions: list[dict], img_width: int) -> list[dict]:
+    """Insert synthetic regions to cover gaps between the full-width area bottom
+    and each column's first detected region. This catches text the layout model missed
+    (e.g., question options that span across column boundaries).
+    """
+    if not regions:
+        return regions
+
+    # Find full-width bottom edge — only if column 0 is a real full-width group
+    # (has title labels or wide regions), not just a regular left column
+    has_fullwidth = any(
+        r.get("_column") == 0 and (
+            r.get("label") in {"doc_title", "paragraph_title", "title", "section_title"}
+            or (r["bbox"][2] - r["bbox"][0]) > img_width * 0.6
+        )
+        for r in regions
+    )
+    fullwidth_bottom = 0
+    if has_fullwidth:
+        for r in regions:
+            if r.get("_column") == 0:
+                fullwidth_bottom = max(fullwidth_bottom, r["bbox"][3])
+
+    if fullwidth_bottom == 0:
+        return regions
+
+    # Group regions by column
+    col_regions: dict[int, list[dict]] = {}
+    for r in regions:
+        col = r.get("_column")
+        if col is not None and col > 0:
+            col_regions.setdefault(col, []).append(r)
+
+    gap_regions = []
+    MIN_GAP = 15  # only fill gaps larger than this (pixels)
+
+    for col_id, col_regs in col_regions.items():
+        # First region in this column (already sorted by y)
+        first = col_regs[0]
+        first_y = first["bbox"][1]
+
+        if first_y - fullwidth_bottom > MIN_GAP:
+            # There's a gap — insert a synthetic region
+            x1 = min(r["bbox"][0] for r in col_regs)
+            x2 = max(r["bbox"][2] for r in col_regs)
+            gap_bbox = [x1, fullwidth_bottom, x2, first_y]
+            gap_region = {
+                "label": "text",
+                "bbox": gap_bbox,
+                "score": 0.5,
+                "_column": col_id,
+                "_synthetic": True,
+            }
+            gap_regions.append(gap_region)
+            logger.info(f"[layout] Filled gap in column {col_id}: y={fullwidth_bottom}-{first_y}")
+
+    if not gap_regions:
+        return regions
+
+    # Insert gap regions right before each column's first region
+    result = []
+    inserted_cols = set()
+    for r in regions:
+        col = r.get("_column")
+        if col is not None and col > 0 and col not in inserted_cols:
+            # Insert any gap region for this column before its first region
+            for gr in gap_regions:
+                if gr["_column"] == col:
+                    result.append(gr)
+            inserted_cols.add(col)
+        result.append(r)
+
+    return result
+
+
+def _detect_columns(regions: list[dict], img_width: int) -> list[list[dict]]:
+    """Detect multi-column layout by clustering region x-centers.
+    Returns list of columns (each a list of regions), left-to-right.
+    Full-width regions (spanning >60% of image width) are NOT assigned to columns;
+    they are returned as a special first "column" to be placed before columnar content.
+    """
+    if not regions:
+        return []
+
+    FULL_WIDTH_RATIO = 0.6  # regions wider than this fraction are "full-width"
+    # Labels that are always treated as full-width (headers, titles)
+    FULL_WIDTH_LABELS = {"doc_title", "paragraph_title", "title", "section_title"}
+    full_width = []
+    narrow = []
+
+    img_center = img_width / 2
+    CENTER_TOLERANCE = 0.15  # region center within 15% of image center = "centered"
+
+    MAX_SUBTITLE_HEIGHT = 50  # centered regions taller than this are text blocks, not subtitles
+
+    # First pass: classify by label and width only
+    for r in regions:
+        x1, y1, x2, y2 = r["bbox"]
+        width = x2 - x1
+        if width > img_width * FULL_WIDTH_RATIO or r["label"] in FULL_WIDTH_LABELS:
+            full_width.append(r)
+        else:
+            narrow.append(r)
+
+    # Second pass: only enable centered-subtitle detection if the page has real titles.
+    # This prevents false positives on continuation pages (no headers).
+    has_titles = any(r["label"] in FULL_WIDTH_LABELS for r in full_width)
+    if has_titles:
+        still_narrow = []
+        for r in narrow:
+            x1, y1, x2, y2 = r["bbox"]
+            width = x2 - x1
+            height = y2 - y1
+            cx = (x1 + x2) / 2
+            is_centered = abs(cx - img_center) < img_width * CENTER_TOLERANCE
+            is_single_line = height <= MAX_SUBTITLE_HEIGHT
+            if is_centered and width < img_width * 0.45 and is_single_line:
+                full_width.append(r)
+            else:
+                still_narrow.append(r)
+        narrow = still_narrow
+
+    if not narrow:
+        return [full_width] if full_width else []
+
+    # Cluster narrow regions into columns by x-center
+    centers = [(r["bbox"][0] + r["bbox"][2]) / 2 for r in narrow]
+    columns = _cluster_columns(narrow, centers, img_width)
+
+    # Sort columns left-to-right by average x-center
+    columns.sort(key=lambda col: sum((r["bbox"][0] + r["bbox"][2]) / 2 for r in col) / len(col))
+
+    # Sort regions within each column top-to-bottom
+    for col in columns:
+        col.sort(key=lambda r: r["bbox"][1])
+
+    # Tag each region with its column index for merge grouping
+    if full_width:
+        full_width.sort(key=lambda r: r["bbox"][1])
+        for r in full_width:
+            r["_column"] = 0
+
+    for ci, col in enumerate(columns):
+        for r in col:
+            r["_column"] = ci + (1 if full_width else 0)
+
+    result = []
+    if full_width:
+        result.append(full_width)
+    result.extend(columns)
+    return result
+
+
+def _cluster_columns(regions: list[dict], centers: list[float], img_width: int) -> list[list[dict]]:
+    """Simple 1D clustering of regions into columns by x-center.
+    Uses a gap threshold: if the gap between sorted x-centers exceeds
+    a fraction of the image width, start a new column.
+    """
+    GAP_RATIO = 0.15  # minimum gap between columns as fraction of image width
+    gap_threshold = img_width * GAP_RATIO
+
+    indexed = sorted(enumerate(regions), key=lambda t: centers[t[0]])
+    columns: list[list[dict]] = []
+    current_col: list[dict] = [indexed[0][1]]
+    prev_center = centers[indexed[0][0]]
+
+    for idx, region in indexed[1:]:
+        c = centers[idx]
+        if c - prev_center > gap_threshold:
+            columns.append(current_col)
+            current_col = [region]
+        else:
+            current_col.append(region)
+        prev_center = c
+
+    columns.append(current_col)
+    return columns
+
+
+def _sort_by_columns(regions: list[dict], img_width: int) -> list[dict]:
+    """Sort regions by column-aware reading order.
+    For single-column docs: top-to-bottom.
+    For multi-column docs: full-width first, then left col top-to-bottom, right col top-to-bottom.
+    """
+    columns = _detect_columns(regions, img_width)
+
+    if len(columns) <= 1:
+        # Single column or all full-width: simple top-to-bottom
+        regions.sort(key=lambda r: (r["bbox"][1], r["bbox"][0]))
+        return regions
+
+    # Multi-column: interleave full-width regions by y-position among columns
+    # Full-width regions (columns[0] if wider) come before each column section
+    # that starts below them
+    sorted_regions = []
+    for col in columns:
+        sorted_regions.extend(col)
+
+    logger.info(f"[layout] Detected {len(columns)} columns "
+                f"({', '.join(str(len(c)) + ' regions' for c in columns)})")
+    return sorted_regions
+
+
+def _merge_adjacent_regions(raw_regions: list[dict]) -> list[list[dict]]:
+    """Group adjacent non-solo regions into merge groups.
+    Returns list of groups, where each group is a list of raw regions.
+    Solo regions (table, figure) always form their own group.
+    Column boundaries (tagged by _detect_columns) split groups.
+    """
+    groups: list[list[dict]] = []
+    current: list[dict] = []
+
+    for region in raw_regions:
+        if region["label"] in _LAYOUT_SOLO_LABELS:
+            if current:
+                groups.append(current)
+                current = []
+            groups.append([region])
+        else:
+            # Split at column boundaries (different _column tag)
+            if current and current[-1].get("_column") != region.get("_column"):
+                groups.append(current)
+                current = []
+            current.append(region)
+
+    if current:
+        groups.append(current)
+    return groups
+
+
+def _group_bbox(regions: list[dict]) -> list[int]:
+    """Compute the bounding box that encompasses all regions."""
+    x1 = min(r["bbox"][0] for r in regions)
+    y1 = min(r["bbox"][1] for r in regions)
+    x2 = max(r["bbox"][2] for r in regions)
+    y2 = max(r["bbox"][3] for r in regions)
+    return [x1, y1, x2, y2]
+
+
+
+def _dedup_regions(regions: list[dict]) -> list[dict]:
+    """Remove regions whose text is entirely contained in another region's text."""
+    if len(regions) <= 1:
+        return regions
+    norms = [re.sub(r'\s+', '', r.get('text', '')) for r in regions]
+    keep = []
+    for i, region in enumerate(regions):
+        if not norms[i]:
+            continue
+        is_dup = False
+        for j, other_norm in enumerate(norms):
+            if i == j or not other_norm:
+                continue
+            if len(norms[i]) < len(other_norm) and norms[i] in other_norm:
+                is_dup = True
+                break
+        if not is_dup:
+            keep.append(region)
+    for i, r in enumerate(keep):
+        r['idx'] = i
+    return keep
+
+
+async def ocr_image_with_layout(image_path: str, merge: bool = True) -> tuple[str, list[dict]]:
+    """Run layout detection + OCR.
+    merge=True:  adjacent text regions merged into fewer OCR calls (fast, coarse regions).
+    merge=False: each region OCR'd individually (slow, fine-grained regions for proofreading).
+    """
+    t0 = time.time()
+    img = Image.open(image_path).convert("RGB")
+
+    # Step 1: Layout detection
+    t1 = time.time()
+    raw_regions = detect_layout(img)
+    logger.info(f"[OCR] Layout detection: {time.time() - t1:.2f}s, {len(raw_regions)} regions")
+
+    # Fallback: if no regions detected, OCR the whole image
+    if not raw_regions:
+        logger.info("[OCR] No layout regions, fallback to whole-image OCR")
+        text = await _ocr_whole_image(img)
+        img.close()
+        elapsed = time.time() - t0
+        logger.info(f"[OCR] TOTAL (fallback): {elapsed:.2f}s")
+        return text, []
+
+    regions = []
+
+    if merge:
+        # Fast path: merge adjacent text regions into groups
+        groups = _merge_adjacent_regions(raw_regions)
+        logger.info(f"[OCR] Merged {len(raw_regions)} regions into {len(groups)} groups")
+
+        for gi, group in enumerate(groups):
+            bbox = _group_bbox(group)
+            cropped = img.crop(bbox)
+            seg_b64 = _image_to_b64(cropped)
+            text = await _ocr_single(seg_b64)
+            text = _postprocess(text)
+
+            label = group[0]["label"] if len(group) == 1 else "text"
+            regions.append({
+                "idx": gi,
+                "label": label,
+                "bbox": bbox,
+                "text": text or "",
+            })
+            logger.info(f"[OCR] Group {gi+1}/{len(groups)} ({label}, {len(group)} merged): {len(text)} chars")
+    else:
+        # Fine-grained path: OCR each region individually
+        for i, region in enumerate(raw_regions):
+            bbox = region["bbox"]
+            cropped = img.crop(bbox)
+            seg_b64 = _image_to_b64(cropped)
+            text = await _ocr_single(seg_b64)
+            text = _postprocess(text)
+
+            regions.append({
+                "idx": i,
+                "label": region["label"],
+                "bbox": bbox,
+                "text": text or "",
+            })
+            logger.info(f"[OCR] Region {i+1}/{len(raw_regions)} ({region['label']}): {len(text)} chars")
+
+    img.close()
+
+    # Cross-region dedup: remove regions whose text is entirely contained in another region
+    regions = _dedup_regions(regions)
+    combined = "\n\n".join(r["text"] for r in regions if r["text"])
+    combined = _dedup_lines(combined)
+    n_calls = len(regions)
+    logger.info(f"[OCR] TOTAL: {time.time() - t0:.2f}s ({len(raw_regions)} regions, {n_calls} calls, merge={'on' if merge else 'off'})")
+    return combined, regions
+
+
+async def _ocr_whole_image(img: Image.Image) -> str:
+    """Fallback: OCR whole image, with splitting for tall images."""
+    w, h = img.size
+    if h > MAX_IMAGE_HEIGHT:
+        segments = _split_image(img)
+    else:
+        segments = [img]
+
+    all_text = []
+    for seg in segments:
+        seg_b64 = _image_to_b64(seg)
+        text = await _ocr_single(seg_b64)
+        text = _postprocess(text)
+        if text:
+            all_text.append(text)
+    return "\n\n".join(all_text)
+
+
+def _split_image(img: Image.Image) -> list[Image.Image]:
+    """Split a tall image into overlapping segments."""
+    w, h = img.size
+    step = MAX_IMAGE_HEIGHT - SEGMENT_OVERLAP
+    segments = []
+    y = 0
+    while y < h:
+        bottom = min(y + MAX_IMAGE_HEIGHT, h)
+        seg = img.crop((0, y, w, bottom))
+        segments.append(seg)
+        y += step
+        if bottom == h:
+            break
+    return segments
+
+
+def _image_to_b64(img: Image.Image) -> str:
+    """Convert PIL Image to base64 PNG string."""
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+async def _ocr_single(image_b64: str) -> str:
+    """Send a single image to Ollama for OCR."""
+    resp = await _http_client.post(
+        f"{OLLAMA_BASE}/api/chat",
+        json=_ollama_chat_payload(OCR_PROMPT, image_b64),
+    )
+    resp.raise_for_status()
+    result = resp.json()
+    return result.get("message", {}).get("content", "")
+
+
+def _ollama_chat_payload(content: str, image_b64: str | None = None) -> dict:
+    message = {
+        "role": "user",
+        "content": content,
+    }
+    if image_b64 is not None:
+        message["images"] = [image_b64]
+    return {
+        "model": OLLAMA_MODEL,
+        "messages": [message],
+        "stream": False,
+        "options": {
+            "num_ctx": OLLAMA_NUM_CTX,
+        },
+    }
+
+
+def _postprocess(text: str) -> str:
+    """Strip markdown fences and convert LaTeX to Unicode."""
+    text = re.sub(r'^```\w*\n?', '', text.strip())
+    text = re.sub(r'\n?```$', '', text.strip())
+    # Remove standalone $$...$$ lines whose content duplicates nearby $...$ inline math
+    text = _preserve_html_tables(text, _remove_duplicate_display_math)
+    text = _latex_to_unicode(text)
+    text = _preserve_html_tables(text, _dedup_lines)
+    return text.strip()
+
+
+def _preserve_html_tables(text: str, transform) -> str:
+    """Apply a text transform outside HTML table blocks only."""
+    parts = re.split(r'(<table[\s\S]*?</table>)', text, flags=re.IGNORECASE)
+    result = []
+    for part in parts:
+        if re.match(r'^<table[\s\S]*</table>$', part, re.IGNORECASE):
+            result.append(part)
+        else:
+            result.append(transform(part))
+    return ''.join(result)
+
+
+def _ollama_error_text(resp: httpx.Response) -> str:
+    try:
+        data = resp.json()
+        if isinstance(data, dict) and data.get("error"):
+            return str(data["error"])
+    except Exception:
+        pass
+    return resp.text
+
+
+def _ollama_resource_hint(detail: str) -> str:
+    lowered = detail.lower()
+    if "model failed to load" in lowered or "resource" in lowered or "memory" in lowered:
+        return " Check Ollama logs and available RAM/VRAM; Folio-OCR keeps layout detection on CPU by default to leave GPU memory for Ollama."
+    return ""
+
+
+def _remove_duplicate_display_math(text: str) -> str:
+    """Remove $$...$$ display math lines that duplicate $...$ inline math content."""
+    lines = text.split('\n')
+    # Collect all inline math content (normalized)
+    inline_contents = set()
+    for line in lines:
+        for m in re.finditer(r'\$([^$]+)\$', line):
+            # Normalize: strip spaces
+            normalized = re.sub(r'\s+', '', m.group(1))
+            inline_contents.add(normalized)
+
+    # Filter out standalone $$...$$ lines whose content matches an inline math
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        m = re.match(r'^\$\$(.+)\$\$$', stripped)
+        if m:
+            normalized = re.sub(r'\s+', '', m.group(1))
+            if normalized in inline_contents:
+                continue  # skip duplicate display math
+        result.append(line)
+    return '\n'.join(result)
+
+
+def _dedup_lines(text: str) -> str:
+    """Remove lines whose normalized content is a substring of any earlier line.
+    Catches GLM-OCR's duplicate display math even when separated by other lines.
+    """
+    lines = text.split('\n')
+    if len(lines) <= 1:
+        return text
+
+    result = [lines[0]]
+    # Keep normalized versions of all accepted lines for fast lookup
+    seen_norms = [re.sub(r'\s+', '', lines[0])]
+
+    for line in lines[1:]:
+        curr_norm = re.sub(r'\s+', '', line)
+        if not curr_norm:
+            result.append(line)  # keep blank lines
+            continue
+
+        # Check if current line is a duplicate/substring of ANY earlier line
+        is_dup = False
+        for prev_norm in seen_norms:
+            if curr_norm == prev_norm:
+                is_dup = True
+                break
+            if len(curr_norm) > 2 and curr_norm in prev_norm:
+                is_dup = True
+                break
+        if is_dup:
+            continue
+
+        result.append(line)
+        seen_norms.append(curr_norm)
+
+    return '\n'.join(result)
+
+
+def _latex_to_unicode(text: str) -> str:
+    """Replace LaTeX notation with Unicode characters using latex_unicode.json"""
+
+    # 1. \textcircled{N} → ①②③...
+    text = re.sub(
+        r'\$\\textcircled\{(\d+)\}\$',
+        lambda m: _CIRCLED.get(m.group(1), m.group(0)),
+        text,
+    )
+
+    # 2. \frac{a}{b} → Unicode fraction (½ etc.) or a/b
+    def _replace_frac(m):
+        num, den = m.group(1), m.group(2)
+        key = f"{num}/{den}"
+        return _LATEX_FRACTIONS.get(key, f"{num}/{den}")
+
+    text = re.sub(r'\$\\frac\{([^}]+)\}\{([^}]+)\}\$', _replace_frac, text)
+
+    # 3. Inline math $...$ and display math $$...$$ → convert interior then strip delimiters
+    text = re.sub(r'\$\$(.+?)\$\$', lambda m: _convert_math_interior(m.group(1)), text, flags=re.DOTALL)
+    text = re.sub(r'\$(.+?)\$', lambda m: _convert_math_interior(m.group(1)), text)
+
+    # 4. Simple $\command$ → Unicode (longest match first) — catch any remaining
+    for latex_cmd, unicode_char in _LATEX_SIMPLE:
+        token = f"${latex_cmd}$"
+        if token in text:
+            text = text.replace(token, unicode_char)
+
+    # 5. Remaining bare $\command$ patterns not in map — unwrap the $ delimiters
+    text = re.sub(r'\$\\([a-zA-Z]+)\$', lambda m: '\\' + m.group(1), text)
+
+    return text
+
+
+def _convert_math_interior(math: str) -> str:
+    """Convert LaTeX math content to Unicode plain text.
+    Handles: ^{\\circ} → °, \\sim → ~, \\times → ×, etc.
+    Collapses spurious spaces between digits: '1 5' → '15'.
+    """
+    s = math.strip()
+
+    # ^{\circ} or ^\circ → ° (degree symbol)
+    s = re.sub(r'\^\{\\circ\}', '°', s)
+    s = re.sub(r'\^\\circ', '°', s)
+
+    # ^{...} superscript — for single char/digit, use Unicode superscript if possible
+    # For complex content, just append it
+    s = re.sub(r'\^\{([^}]+)\}', lambda m: m.group(1), s)
+    s = re.sub(r'\^(\d)', lambda m: m.group(1), s)
+
+    # _{...} subscript — similar treatment
+    s = re.sub(r'_\{([^}]+)\}', lambda m: m.group(1), s)
+    s = re.sub(r'_(\d)', lambda m: m.group(1), s)
+
+    # Replace LaTeX commands with Unicode (longest match first)
+    for latex_cmd, unicode_char in _LATEX_SIMPLE:
+        if latex_cmd in s:
+            s = s.replace(latex_cmd, unicode_char)
+
+    # Remove remaining braces
+    s = s.replace('{', '').replace('}', '')
+
+    # Collapse spaces between digits: "1 5" → "15", "2 0" → "20"
+    s = re.sub(r'(\d)\s+(\d)', r'\1\2', s)
+
+    # Clean up multiple spaces
+    s = re.sub(r' {2,}', ' ', s)
+
+    return s.strip()
+
+
+def pdf_to_images(pdf_path: str, output_dir: Path) -> list[str]:
+    """Convert PDF pages to images in the specified directory"""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filenames = []
+    mat = fitz.Matrix(2.0, 2.0)
+    doc = fitz.open(pdf_path)
+
+    for page_num, page in enumerate(doc):
+        pix = page.get_pixmap(matrix=mat)
+        filename = f"page_{page_num + 1:03d}.png"
+        pix.save(str(output_dir / filename))
+        filenames.append(filename)
+
+    doc.close()
+    return filenames
+
+
+def _safe_doc_path(doc_id: str, filename: str = "") -> Path:
+    """Build a path inside UPLOAD_DIR/{doc_id} with traversal protection"""
+    doc_dir = (UPLOAD_DIR / doc_id).resolve()
+    if not str(doc_dir).startswith(str(UPLOAD_DIR.resolve())):
+        raise HTTPException(403, "Invalid document ID")
+    if filename:
+        file_path = (doc_dir / filename).resolve()
+        if not str(file_path).startswith(str(doc_dir)):
+            raise HTTPException(403, "Invalid filename")
+        return file_path
+    return doc_dir
+
+
+# --- Endpoints ---
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve frontend page"""
+    with open(APP_DIR / "index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/api/status")
+async def status():
+    """Check service status"""
+    ollama = await check_ollama()
+    return {
+        "status": "running",
+        "model_loaded": ollama["model_loaded"],
+        "layout_loaded": _layout_model is not None,
+        "layout_device": _LAYOUT_DEVICE,
+        "ollama_num_ctx": OLLAMA_NUM_CTX,
+        "ocr_request_timeout_ms": OCR_REQUEST_TIMEOUT_MS,
+        "device": "ollama",
+        "gpu": {"name": f"Ollama ({OLLAMA_MODEL})"} if ollama["online"] else None,
+    }
+
+
+async def ensure_ollama_running() -> dict:
+    """Start Ollama if not running, wait until ready"""
+    ollama = await check_ollama()
+    if ollama["online"]:
+        return ollama
+
+    logger.info("[ollama] Not running, attempting to start ollama serve...")
+    try:
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+        logger.info("[ollama] Popen launched, waiting for service...")
+    except FileNotFoundError:
+        logger.error("[ollama] 'ollama' command not found in PATH")
+        raise HTTPException(500, "Ollama not found. Please install Ollama first.")
+    except Exception as e:
+        logger.error(f"[ollama] Failed to start: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to start Ollama: {e}")
+
+    for i in range(60):
+        await asyncio.sleep(0.5)
+        ollama = await check_ollama()
+        if ollama["online"]:
+            logger.info(f"[ollama] Started in {(i + 1) * 0.5:.1f}s")
+            return ollama
+
+    raise HTTPException(500, "Failed to start Ollama after 30s")
+
+
+@app.post("/api/load-model")
+async def load_model_endpoint():
+    """Load layout model + start Ollama + pre-warm OCR model"""
+    # Load layout detection model (heavy: torch + transformers)
+    if _layout_model is None:
+        await asyncio.to_thread(_ensure_layout_model)
+
+    ollama = await ensure_ollama_running()
+
+    if not ollama["model_loaded"]:
+        raise HTTPException(500, f"Model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}")
+
+    try:
+        t0 = time.time()
+        resp = await _http_client.post(
+            f"{OLLAMA_BASE}/api/chat",
+            json=_ollama_chat_payload("hi"),
+        )
+        resp.raise_for_status()
+        logger.info(f"[load_model] Warmup done: {time.time() - t0:.2f}s")
+    except httpx.HTTPStatusError as e:
+        detail = _ollama_error_text(e.response)
+        logger.error(f"[load_model] Ollama warmup failed: {detail}", exc_info=True)
+        raise HTTPException(500, f"Ollama model warmup failed: {detail}.{_ollama_resource_hint(detail)}")
+    except Exception as e:
+        logger.error(f"[load_model] Warmup failed: {e}", exc_info=True)
+        raise HTTPException(500, f"Ollama model warmup failed: {e}")
+    return {"success": True, "message": "All models loaded"}
+
+
+ALLOWED_SUFFIXES = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.pdf'}
+
+
+@app.post("/api/upload")
+async def upload_files(files: list[UploadFile] = File(...)):
+    """Upload one or more files. Multiple images become pages of one document.
+    Always streams pages via SSE so the frontend gets incremental updates."""
+    if not files:
+        raise HTTPException(400, "No files provided")
+
+    for f in files:
+        if Path(f.filename).suffix.lower() not in ALLOWED_SUFFIXES:
+            raise HTTPException(400, f"Unsupported file type: {f.filename}")
+
+    # Read all file contents upfront (before entering the generator)
+    file_data: list[tuple[str, str, bytes]] = []  # (filename, suffix, content)
+    for f in files:
+        suffix = Path(f.filename).suffix.lower()
+        content = await f.read()
+        file_data.append((f.filename, suffix, content))
+
+    doc_id = str(uuid.uuid4())
+    doc_dir = UPLOAD_DIR / doc_id
+    doc_dir.mkdir(parents=True, exist_ok=True)
+
+    # Display name
+    if len(file_data) == 1:
+        display_name = file_data[0][0]
+    else:
+        display_name = f"{len(file_data)} files"
+
+    created_at = datetime.now().isoformat()
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO documents (doc_id, filename, created_at) VALUES (?, ?, ?)",
+            (doc_id, display_name, created_at),
+        )
+
+    async def generate():
+        page_num = 0
+
+        yield f"data: {json.dumps({'type': 'init', 'doc_id': doc_id, 'filename': display_name})}\n\n"
+
+        for fname, suffix, content in file_data:
+            if suffix == ".pdf":
+                # Save PDF, extract pages
+                pdf_path = doc_dir / f"src_{uuid.uuid4().hex[:8]}.pdf"
+                with open(pdf_path, "wb") as fp:
+                    fp.write(content)
+
+                mat = fitz.Matrix(2.0, 2.0)
+                doc = fitz.open(str(pdf_path))
+                for fitz_page in doc:
+                    page_num += 1
+                    pix = fitz_page.get_pixmap(matrix=mat)
+                    img_name = f"page_{page_num:03d}.png"
+                    pix.save(str(doc_dir / img_name))
+
+                    with get_db() as conn:
+                        conn.execute(
+                            "INSERT INTO pages (doc_id, num, filename) VALUES (?, ?, ?)",
+                            (doc_id, page_num, img_name),
+                        )
+
+                    page_info = {
+                        "num": page_num,
+                        "filename": img_name,
+                        "image_url": f"/api/images/{doc_id}/{img_name}",
+                        "ocr_text": None,
+                        "ocr_regions": None,
+                        "ocr_time": None,
+                    }
+                    yield f"data: {json.dumps({'type': 'page', 'page': page_info})}\n\n"
+                    await asyncio.sleep(0)
+
+                doc.close()
+                pdf_path.unlink(missing_ok=True)
+            else:
+                # Single image
+                page_num += 1
+                img_name = f"page_{page_num:03d}{suffix}"
+                with open(doc_dir / img_name, "wb") as fp:
+                    fp.write(content)
+
+                with get_db() as conn:
+                    conn.execute(
+                        "INSERT INTO pages (doc_id, num, filename) VALUES (?, ?, ?)",
+                        (doc_id, page_num, img_name),
+                    )
+
+                page_info = {
+                    "num": page_num,
+                    "filename": img_name,
+                    "image_url": f"/api/images/{doc_id}/{img_name}",
+                    "ocr_text": None,
+                    "ocr_regions": None,
+                    "ocr_time": None,
+                }
+                yield f"data: {json.dumps({'type': 'page', 'page': page_info})}\n\n"
+                await asyncio.sleep(0)
+
+        yield f"data: {json.dumps({'type': 'done', 'page_count': page_num})}\n\n"
+        logger.info(f"[upload] {display_name} -> {doc_id}, {page_num} page(s)")
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@app.get("/api/images/{doc_id}/{filename}")
+async def get_image(doc_id: str, filename: str):
+    """Serve an uploaded page image"""
+    file_path = _safe_doc_path(doc_id, filename)
+    if not file_path.exists():
+        raise HTTPException(404, "Image not found")
+    return FileResponse(file_path, media_type="image/png")
+
+
+@app.post("/api/ocr/{doc_id}/{page_num}")
+async def ocr_single_page(doc_id: str, page_num: int, layout: bool = Query(True), force: bool = Query(False)):
+    """Run OCR on a single page. Pass ?force=true to re-scan ignoring cache."""
+    with get_db() as conn:
+        page = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? AND num=?", (doc_id, page_num)
+        ).fetchone()
+    if page is None:
+        raise HTTPException(404, f"Page {page_num} not found")
+
+    # If already OCR'd and not forced, return cached result
+    if page["ocr_text"] is not None and not force:
+        return {
+            "doc_id": doc_id,
+            "page_num": page_num,
+            "text": page["ocr_text"],
+            "regions": json.loads(page["ocr_regions"]) if page["ocr_regions"] else [],
+            "time": page["ocr_time"],
+            "cached": True,
+        }
+
+    image_path = _safe_doc_path(doc_id, page["filename"])
+    if not image_path.exists():
+        raise HTTPException(404, "Image file not found")
+
+    try:
+        t0 = time.time()
+        text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
+        elapsed = round(time.time() - t0, 2)
+
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE pages SET ocr_text=?, ocr_regions=?, ocr_time=? WHERE doc_id=? AND num=?",
+                (text, json.dumps(regions), elapsed, doc_id, page_num),
+            )
+
+        return {
+            "doc_id": doc_id,
+            "page_num": page_num,
+            "text": text,
+            "regions": regions,
+            "time": elapsed,
+            "cached": False,
+        }
+    except httpx.HTTPStatusError as e:
+        detail = _ollama_error_text(e.response)
+        logger.error(f"[OCR] Ollama error: {detail}", exc_info=True)
+        raise HTTPException(500, f"OCR failed: {detail}.{_ollama_resource_hint(detail)}")
+    except Exception as e:
+        logger.error(f"[OCR] Error: {e}", exc_info=True)
+        raise HTTPException(500, f"OCR failed: {e}")
+
+
+@app.post("/api/ocr/{doc_id}/all")
+async def ocr_all_pages(doc_id: str, layout: bool = Query(True)):
+    """Run OCR on all pages of a document. Pass ?layout=false to skip layout detection."""
+    with get_db() as conn:
+        doc_row = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+        if doc_row is None:
+            raise HTTPException(404, "Document not found")
+        pages = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? ORDER BY num", (doc_id,)
+        ).fetchall()
+
+    results = []
+
+    for page in pages:
+        if page["ocr_text"] is not None:
+            results.append({
+                "page_num": page["num"],
+                "text": page["ocr_text"],
+                "regions": json.loads(page["ocr_regions"]) if page["ocr_regions"] else [],
+                "time": page["ocr_time"],
+                "cached": True,
+            })
+            continue
+
+        image_path = _safe_doc_path(doc_id, page["filename"])
+        try:
+            t0 = time.time()
+            text, regions = await ocr_image_with_layout(str(image_path), merge=not layout)
+            elapsed = round(time.time() - t0, 2)
+
+            with get_db() as conn:
+                conn.execute(
+                    "UPDATE pages SET ocr_text=?, ocr_regions=?, ocr_time=? WHERE doc_id=? AND num=?",
+                    (text, json.dumps(regions), elapsed, doc_id, page["num"]),
+                )
+
+            results.append({
+                "page_num": page["num"],
+                "text": text,
+                "regions": regions,
+                "time": elapsed,
+                "cached": False,
+            })
+        except Exception as e:
+            logger.error(f"[OCR] Page {page['num']} error: {e}", exc_info=True)
+            results.append({
+                "page_num": page["num"],
+                "text": None,
+                "regions": [],
+                "time": None,
+                "error": str(e),
+            })
+
+    return {
+        "doc_id": doc_id,
+        "filename": doc_row["filename"],
+        "results": results,
+    }
+
+
+@app.delete("/api/documents/{doc_id}")
+async def delete_document(doc_id: str):
+    """Delete a document and its images"""
+    with get_db() as conn:
+        row = conn.execute("SELECT doc_id FROM documents WHERE doc_id=?", (doc_id,)).fetchone()
+        if row is None:
+            raise HTTPException(404, "Document not found")
+        conn.execute("DELETE FROM documents WHERE doc_id=?", (doc_id,))
+
+    doc_dir = _safe_doc_path(doc_id)
+    if doc_dir.exists():
+        shutil.rmtree(doc_dir, ignore_errors=True)
+
+    logger.info(f"[delete] Document {doc_id} removed")
+    return {"success": True}
+
+
+# --- Save / List / Get endpoints ---
+
+class _SaveTextRequest(BaseModel):
+    text: str
+
+
+@app.put("/api/pages/{doc_id}/{page_num}/text")
+async def save_page_text(doc_id: str, page_num: int, req: _SaveTextRequest):
+    """Save user-edited text for a page."""
+    with get_db() as conn:
+        cur = conn.execute(
+            "UPDATE pages SET ocr_text=? WHERE doc_id=? AND num=?",
+            (req.text, doc_id, page_num),
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Page not found")
+    return {"success": True}
+
+
+@app.get("/api/documents")
+async def list_documents():
+    """List all documents with page counts."""
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT d.doc_id, d.filename, d.created_at,
+                   COUNT(p.num) AS page_count,
+                   SUM(CASE WHEN p.ocr_text IS NOT NULL THEN 1 ELSE 0 END) AS ocr_count
+            FROM documents d
+            LEFT JOIN pages p ON d.doc_id = p.doc_id
+            GROUP BY d.doc_id
+            ORDER BY d.created_at DESC
+        """).fetchall()
+    return [
+        {
+            "doc_id": r["doc_id"],
+            "filename": r["filename"],
+            "created_at": r["created_at"],
+            "page_count": r["page_count"],
+            "ocr_count": r["ocr_count"],
+        }
+        for r in rows
+    ]
+
+
+@app.get("/api/documents/{doc_id}")
+async def get_document(doc_id: str):
+    """Load a document with all its pages (for restore)."""
+    with get_db() as conn:
+        doc_row = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+        if doc_row is None:
+            raise HTTPException(404, "Document not found")
+        pages = conn.execute(
+            "SELECT * FROM pages WHERE doc_id=? ORDER BY num", (doc_id,)
+        ).fetchall()
+
+    return {
+        "doc_id": doc_row["doc_id"],
+        "filename": doc_row["filename"],
+        "created_at": doc_row["created_at"],
+        "pages": [
+            {
+                "num": p["num"],
+                "filename": p["filename"],
+                "image_url": f"/api/images/{doc_id}/{p['filename']}",
+                "ocr_text": p["ocr_text"],
+                "ocr_regions": json.loads(p["ocr_regions"]) if p["ocr_regions"] else None,
+                "ocr_time": p["ocr_time"],
+            }
+            for p in pages
+        ],
+    }
+
+
+# --- DOCX Export ---
+
+class _ExportPage(BaseModel):
+    num: int
+    text: str
+
+class _ExportRequest(BaseModel):
+    pages: list[_ExportPage]
+    title: str | None = None
+
+
+class _TableParser(HTMLParser):
+    """Extract rows/cells from an HTML <table>."""
+    def __init__(self):
+        super().__init__()
+        self.rows: list[list[str]] = []
+        self._in_cell = False
+        self._cell_text = ""
+        self._current_row: list[str] = []
+        self._is_header_row = False
+        self.header_row_indices: set[int] = set()
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag == "tr":
+            self._current_row = []
+            self._is_header_row = False
+        elif tag in ("td", "th"):
+            self._in_cell = True
+            self._cell_text = ""
+            if tag == "th":
+                self._is_header_row = True
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ("td", "th"):
+            self._in_cell = False
+            self._current_row.append(self._cell_text.strip())
+        elif tag == "tr":
+            if self._current_row:
+                if self._is_header_row:
+                    self.header_row_indices.add(len(self.rows))
+                self.rows.append(self._current_row)
+
+    def handle_data(self, data):
+        if self._in_cell:
+            self._cell_text += data
+
+
+def _parse_md_table(lines: list[str]) -> list[list[str]]:
+    """Parse markdown table lines into rows of cells."""
+    rows = []
+    for line in lines:
+        stripped = line.strip()
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        # Skip separator row (---, :--:, etc.)
+        if all(re.match(r'^[-:]+$', c) for c in cells if c):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def _parse_ocr_text(text: str) -> list[dict]:
+    """Parse OCR text into structured elements: headings, paragraphs, tables.
+    Returns list of {type: 'heading'|'paragraph'|'table', ...}
+    """
+    elements = []
+
+    # Split by HTML tables first
+    parts = re.split(r'(<table[\s\S]*?</table>)', text, flags=re.IGNORECASE)
+
+    for part in parts:
+        if re.match(r'^<table[\s\S]*</table>$', part, re.IGNORECASE):
+            # HTML table
+            parser = _TableParser()
+            parser.feed(part)
+            if parser.rows:
+                elements.append({
+                    "type": "table",
+                    "rows": parser.rows,
+                    "header_rows": parser.header_row_indices,
+                })
+            continue
+
+        # Process non-table text line by line
+        lines = part.split('\n')
+        md_table_buf = []
+
+        def flush_md_table():
+            if not md_table_buf:
+                return
+            rows = _parse_md_table(md_table_buf)
+            if rows:
+                elements.append({
+                    "type": "table",
+                    "rows": rows,
+                    "header_rows": {0},  # first row is header in md tables
+                })
+            md_table_buf.clear()
+
+        for line in lines:
+            trimmed = line.strip()
+
+            # Detect markdown table rows
+            if '|' in trimmed and (trimmed.startswith('|') or re.search(r'\w\s*\|', trimmed)):
+                md_table_buf.append(trimmed)
+                continue
+
+            if md_table_buf:
+                flush_md_table()
+
+            # Headings
+            if trimmed.startswith('### '):
+                elements.append({"type": "heading", "level": 3, "text": trimmed[4:]})
+            elif trimmed.startswith('## '):
+                elements.append({"type": "heading", "level": 2, "text": trimmed[3:]})
+            elif trimmed.startswith('# '):
+                elements.append({"type": "heading", "level": 1, "text": trimmed[2:]})
+            elif trimmed:
+                elements.append({"type": "paragraph", "text": trimmed})
+            # Skip blank lines (they're just spacing)
+
+        flush_md_table()
+
+    return elements
+
+
+def _build_docx(title: str, pages: list[_ExportPage]) -> io.BytesIO:
+    """Build a real DOCX file from parsed OCR text."""
+    doc = DocxDocument()
+
+    # Set default font
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Calibri'
+    font.size = Pt(11)
+    # Set East Asian font (微软雅黑) for Chinese text
+    rpr = style.element.get_or_add_rPr()
+    ea_font = rpr.makeelement(qn('w:rFonts'), {qn('w:eastAsia'): '微软雅黑'})
+    rpr.append(ea_font)
+
+    multi_page = len(pages) > 1
+
+    if multi_page:
+        doc.add_heading(title, level=0)
+
+    for idx, page in enumerate(pages):
+        # Section break for each page after the first (each OCR page = one Word section)
+        if multi_page and idx > 0:
+            doc.add_section(WD_SECTION_START.NEW_PAGE)
+
+        elements = _parse_ocr_text(page.text or '')
+
+        for elem in elements:
+            if elem["type"] == "heading":
+                doc.add_heading(elem["text"], level=elem["level"])
+
+            elif elem["type"] == "paragraph":
+                para = doc.add_paragraph()
+                text = elem["text"]
+                # Simple bold/italic parsing
+                parts = re.split(r'(\*\*.*?\*\*|\*.*?\*)', text)
+                for p in parts:
+                    if p.startswith('**') and p.endswith('**'):
+                        run = para.add_run(p[2:-2])
+                        run.bold = True
+                    elif p.startswith('*') and p.endswith('*') and len(p) > 2:
+                        run = para.add_run(p[1:-1])
+                        run.italic = True
+                    else:
+                        para.add_run(p)
+
+            elif elem["type"] == "table":
+                rows = elem["rows"]
+                if not rows:
+                    continue
+                n_cols = max(len(r) for r in rows)
+                tbl = doc.add_table(rows=len(rows), cols=n_cols)
+                tbl.style = 'Table Grid'
+
+                header_rows = elem.get("header_rows", set())
+
+                for i, row_data in enumerate(rows):
+                    row = tbl.rows[i]
+                    for j, cell_text in enumerate(row_data):
+                        if j < n_cols:
+                            cell = row.cells[j]
+                            cell.text = cell_text
+                            # Bold header cells
+                            if i in header_rows:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.bold = True
+
+    # Add page number footers (one per section = one per OCR page)
+    if multi_page:
+        for idx, section in enumerate(doc.sections):
+            footer = section.footer
+            footer.is_linked_to_previous = False
+            para = footer.paragraphs[0]
+            para.text = f"— {pages[idx].num} —"
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for run in para.runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _render_epub_inline(text: str) -> str:
+    """Escape inline text and preserve simple markdown emphasis."""
+    escaped = html_escape(text or "")
+    escaped = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', escaped)
+    escaped = re.sub(r'\*(.+?)\*', r'<em>\1</em>', escaped)
+    return escaped
+
+
+def _render_epub_elements(text: str) -> str:
+    elements = _parse_ocr_text(text or "")
+    if not elements:
+        return '<p class="empty">not recognized</p>'
+
+    body = []
+    for elem in elements:
+        if elem["type"] == "heading":
+            level = min(max(elem["level"], 1), 3)
+            body.append(f'<h{level}>{_render_epub_inline(elem["text"])}</h{level}>')
+
+        elif elem["type"] == "paragraph":
+            body.append(f'<p>{_render_epub_inline(elem["text"])}</p>')
+
+        elif elem["type"] == "table":
+            rows = elem["rows"]
+            header_rows = elem.get("header_rows", set())
+            if not rows:
+                continue
+            table = ['<table>']
+            for i, row in enumerate(rows):
+                tag = "th" if i in header_rows else "td"
+                cells = ''.join(f'<{tag}>{_render_epub_inline(cell)}</{tag}>' for cell in row)
+                table.append(f'<tr>{cells}</tr>')
+            table.append('</table>')
+            body.append(''.join(table))
+
+    return '\n'.join(body)
+
+
+def _epub_chapter_xhtml(title: str, page: _ExportPage) -> str:
+    return f'''<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+<head>
+  <title>{html_escape(title)} - Page {page.num}</title>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <section>
+    <h1>Page {page.num}</h1>
+    {_render_epub_elements(page.text)}
+  </section>
+</body>
+</html>
+'''
+
+
+def _build_epub(title: str, pages: list[_ExportPage]) -> io.BytesIO:
+    """Build a simple EPUB 3 file from OCR pages."""
+    book_id = str(uuid.uuid4())
+    modified = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    safe_title = html_escape(title)
+    chapter_items = [
+        (f"page_{page.num:03d}.xhtml", f"page{idx}", page)
+        for idx, page in enumerate(pages, start=1)
+    ]
+
+    manifest_items = [
+        '<item id="nav" properties="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>',
+        '<item id="style" href="style.css" media-type="text/css"/>',
+    ]
+    spine_items = []
+    nav_items = []
+    for href, item_id, page in chapter_items:
+        manifest_items.append(f'<item id="{item_id}" href="{href}" media-type="application/xhtml+xml"/>')
+        spine_items.append(f'<itemref idref="{item_id}"/>')
+        nav_items.append(f'<li><a href="{href}">Page {page.num}</a></li>')
+
+    manifest_xml = "\n    ".join(manifest_items)
+    spine_xml = "\n    ".join(spine_items)
+    nav_xml = "\n      ".join(nav_items)
+
+    content_opf = f'''<?xml version="1.0" encoding="utf-8"?>
+<package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">urn:uuid:{book_id}</dc:identifier>
+    <dc:title>{safe_title}</dc:title>
+    <dc:language>zh-CN</dc:language>
+    <meta property="dcterms:modified">{modified}</meta>
+  </metadata>
+  <manifest>
+    {manifest_xml}
+  </manifest>
+  <spine>
+    {spine_xml}
+  </spine>
+</package>
+'''
+
+    nav_xhtml = f'''<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN" lang="zh-CN">
+<head>
+  <title>{safe_title}</title>
+</head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h1>{safe_title}</h1>
+    <ol>
+      {nav_xml}
+    </ol>
+  </nav>
+</body>
+</html>
+'''
+
+    style_css = '''body {
+  font-family: serif;
+  line-height: 1.6;
+}
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+td, th {
+  border: 1px solid #888;
+  padding: 0.35em;
+  vertical-align: top;
+}
+th {
+  font-weight: bold;
+}
+.empty {
+  color: #777;
+}
+'''
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
+        zf.writestr(
+            "META-INF/container.xml",
+            '''<?xml version="1.0" encoding="utf-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+''',
+        )
+        zf.writestr("OEBPS/content.opf", content_opf)
+        zf.writestr("OEBPS/nav.xhtml", nav_xhtml)
+        zf.writestr("OEBPS/style.css", style_css)
+        for href, _, page in chapter_items:
+            zf.writestr(f"OEBPS/{href}", _epub_chapter_xhtml(title, page))
+
+    buf.seek(0)
+    return buf
+
+
+@app.post("/api/export/{doc_id}")
+async def export_docx(doc_id: str, req: _ExportRequest):
+    """Export document as a real DOCX file."""
+    with get_db() as conn:
+        doc_meta = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+    if doc_meta is None:
+        raise HTTPException(404, "Document not found")
+
+    fallback = (doc_meta["filename"] or "Document").replace(".pdf", "")
+    title = req.title or fallback
+
+    buf = _build_docx(title, req.pages)
+
+    # RFC 5987 encoding for non-ASCII filenames
+    safe_name = f"{title}.docx"
+    encoded_name = quote(safe_name)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
+        },
+    )
+
+
+@app.post("/api/export/{doc_id}/epub")
+async def export_epub(doc_id: str, req: _ExportRequest):
+    """Export document as an EPUB file."""
+    with get_db() as conn:
+        doc_meta = conn.execute(
+            "SELECT * FROM documents WHERE doc_id=?", (doc_id,)
+        ).fetchone()
+    if doc_meta is None:
+        raise HTTPException(404, "Document not found")
+
+    fallback = (doc_meta["filename"] or "Document").replace(".pdf", "")
+    title = req.title or fallback
+
+    buf = _build_epub(title, req.pages)
+
+    safe_name = f"{title}.epub"
+    encoded_name = quote(safe_name)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/epub+zip",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"
+        },
+    )
+
+
+# Static files — must be last so it doesn't shadow API routes.
+app.mount("/", StaticFiles(directory=str(APP_DIR)), name="static")
+
+
+def main():
+    import uvicorn
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "3000"))
+    uvicorn.run("folio_ocr.server:app", host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()

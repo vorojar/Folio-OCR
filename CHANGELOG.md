@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.4.0] - 2026-06-18
+
+### Added
+- 新增 Python 包结构和 `folio-ocr` 命令入口，支持 `uvx --from git+https://github.com/vorojar/Folio-OCR folio-ocr`
+- 新增 `pyproject.toml`，Release 工作流会构建 wheel / sdist 并上传到 GitHub Release
+- 新增 GitHub Actions CI，统一运行 `scripts/verify.sh`、构建包并检查分发元数据
+- 新增 MIT `LICENSE` 文件和 GitHub bug report issue template
+- Docker Compose 新增 `OLLAMA_VERSION` 覆盖入口，便于临时验证 Ollama 版本兼容性
+- 新增 `OCR_REQUEST_TIMEOUT_MS` 配置，默认 300 秒并通过 `/api/status` 暴露给前端
+
+### Changed
+- 首页和 README 前置 `uvx` / Docker 快速启动路径，更强调 30 秒看懂和 3 分钟跑通
+- 应用资源移动到 `folio_ocr/` 包目录，根目录 `server.py` 保留兼容入口
+- 运行时数据库、日志和上传目录默认写入当前工作目录，适配 `uvx` / `pipx` 安装后的只读包目录
+
+### Fixed
+- 单页 OCR、预识别、批量 OCR 和 Re-scan 统一使用可配置 OCR 请求超时，减少长 PDF 在浏览器侧被 120 秒中断的问题
+- Re-scan 现在会保留当前 layout 设置，并在失败时显示明确错误提示
+
 ## [3.3.1] - 2026-05-28
 
 ### Fixed

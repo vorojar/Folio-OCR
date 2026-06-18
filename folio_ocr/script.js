@@ -11,6 +11,7 @@ const state = {
     ocrAbort: false,
     viewMode: 'preview',
     layoutEnabled: true,
+    ocrRequestTimeoutMs: 300000,
     docs: [],  // [{doc_id, filename, page_count, ocr_count, created_at}]
 };
 
@@ -121,6 +122,7 @@ async function checkStatus() {
         const data = await res.json();
         state.modelLoaded = data.model_loaded;
         state.layoutModelLoaded = data.layout_loaded;
+        state.ocrRequestTimeoutMs = data.ocr_request_timeout_ms || state.ocrRequestTimeoutMs;
 
         if (state.isLoadingModel) {
             // Don't override loading UI
@@ -275,7 +277,7 @@ async function uploadFiles(fileList) {
     topFilename.textContent = `Uploading ${label}...`;
 
     try {
-        const res = await fetchT('/api/upload', { method: 'POST', body: formData }, 120000);
+        const res = await fetchT('/api/upload', { method: 'POST', body: formData }, state.ocrRequestTimeoutMs);
         if (!res.ok) {
             let msg = 'Upload failed';
             try {
@@ -470,7 +472,7 @@ async function runOcrForPage(page) {
     }
 
     try {
-        const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, 120000);
+        const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, state.ocrRequestTimeoutMs);
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || 'OCR failed');
@@ -530,7 +532,7 @@ async function preOcrNext(currentNum) {
     }
 
     try {
-        const res = await fetchT(`/api/ocr/${state.activeDocId}/${next.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, 120000);
+        const res = await fetchT(`/api/ocr/${state.activeDocId}/${next.num}?layout=${state.layoutEnabled}`, { method: 'POST' }, state.ocrRequestTimeoutMs);
         if (!res.ok) throw new Error('Pre-OCR failed');
         const data = await res.json();
 
@@ -821,8 +823,11 @@ rescanBtn.addEventListener('click', async () => {
     rescanBtn.disabled = true;
 
     try {
-        const res = await fetch(`/api/ocr/${state.activeDocId}/${page.num}?force=true`, { method: 'POST' });
-        if (!res.ok) throw new Error('Re-scan failed');
+        const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}&force=true`, { method: 'POST' }, state.ocrRequestTimeoutMs);
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Re-scan failed');
+        }
         const data = await res.json();
 
         page.ocr_text = data.text;
@@ -839,6 +844,7 @@ rescanBtn.addEventListener('click', async () => {
         }
     } catch (e) {
         console.error('Re-scan error:', e);
+        showToast(e.name === 'AbortError' ? 'Re-scan timed out' : `Re-scan failed: ${e.message}`, 'error');
     } finally {
         state.ocrRunning = false;
         rescanBtn.textContent = 'Re-scan';
@@ -1055,7 +1061,7 @@ ocrAllBtn.addEventListener('click', async () => {
         _batchAbortController = new AbortController();
 
         try {
-            const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST', signal: _batchAbortController.signal }, 120000);
+            const res = await fetchT(`/api/ocr/${state.activeDocId}/${page.num}?layout=${state.layoutEnabled}`, { method: 'POST', signal: _batchAbortController.signal }, state.ocrRequestTimeoutMs);
             if (!res.ok) {
                 const err = await res.json();
                 throw new Error(err.detail || 'OCR failed');
